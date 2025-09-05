@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,6 +27,20 @@ public class ProductService {
 	@Transactional
 	public ProductResponse createProduct(CreateProductRequest request) {
 		log.info("Creating new product: {}", request.getName());
+
+		// Validate SKU uniqueness for all variants
+		Set<String> requestedSkus = request.getVariants().stream()
+				.map(ProductVariantRequest::getSku)
+				.collect(Collectors.toSet());
+
+		if (requestedSkus.size() != request.getVariants().size()) {
+			throw new IllegalArgumentException("Duplicate SKUs found in request variants");
+		}
+
+		Set<String> existingSkus = productVariantRepository.findExistingSkus(requestedSkus);
+		if (!existingSkus.isEmpty()) {
+			throw new IllegalArgumentException("SKUs already exist: " + String.join(", ", existingSkus));
+		}
 
 		if (request.getCategoryId() != null) {
 			categoryService.validateLeafCategory(request.getCategoryId());
