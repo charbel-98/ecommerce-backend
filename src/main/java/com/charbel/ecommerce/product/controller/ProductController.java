@@ -1,6 +1,9 @@
 package com.charbel.ecommerce.product.controller;
 
+import com.charbel.ecommerce.product.dto.AddStockRequest;
+import com.charbel.ecommerce.product.dto.AddStockResponse;
 import com.charbel.ecommerce.product.dto.CreateProductRequest;
+import com.charbel.ecommerce.product.dto.LowStockResponse;
 import com.charbel.ecommerce.product.dto.ProductResponse;
 import com.charbel.ecommerce.product.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,6 +16,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/products")
@@ -34,6 +43,69 @@ public class ProductController {
 		log.info("Admin creating new product: {}", request.getName());
 		ProductResponse response = productService.createProduct(request);
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
+	}
+
+	@GetMapping("/low-stock")
+	@PreAuthorize("hasRole('ADMIN')")
+	@Operation(
+		summary = "Get low stock products",
+		description = "Returns products with stock less than 5. Admin only.",
+		security = @SecurityRequirement(name = "bearerAuth")
+	)
+	public ResponseEntity<List<LowStockResponse>> getLowStockProducts() {
+		log.info("Admin requesting low stock products");
+		List<LowStockResponse> response = productService.getLowStockProducts();
+		return ResponseEntity.ok(response);
+	}
+
+	@GetMapping("/low-stock-variants")
+	@PreAuthorize("hasRole('ADMIN')")
+	@Operation(
+		summary = "Get low stock variants",
+		description = "Returns product variants with stock less than 5. Admin only.",
+		security = @SecurityRequirement(name = "bearerAuth")
+	)
+	public ResponseEntity<List<LowStockResponse>> getLowStockVariants() {
+		log.info("Admin requesting low stock variants");
+		List<LowStockResponse> response = productService.getLowStockVariants();
+		return ResponseEntity.ok(response);
+	}
+
+	@PostMapping("/add-stock")
+	@PreAuthorize("hasRole('ADMIN')")
+	@Operation(
+		summary = "Add stock to variants",
+		description = "Adds stock to multiple product variants. Admin only.",
+		security = @SecurityRequirement(name = "bearerAuth")
+	)
+	public ResponseEntity<AddStockResponse> addStockToVariants(@Valid @RequestBody AddStockRequest request) {
+		log.info("Admin adding stock to {} variants", request.getStockUpdates().size());
+		AddStockResponse response = productService.addStockToVariants(request);
+		return ResponseEntity.ok(response);
+	}
+
+	@GetMapping
+	@Operation(
+		summary = "Get paginated products",
+		description = "Returns a paginated list of products with their variants"
+	)
+	public ResponseEntity<Page<ProductResponse>> getProducts(@PageableDefault(size = 20) Pageable pageable) {
+		log.info("Fetching products with pagination: page={}, size={}", pageable.getPageNumber(), pageable.getPageSize());
+		Page<ProductResponse> response = productService.getProducts(pageable);
+		return ResponseEntity.ok(response);
+	}
+
+	@PutMapping("/{productId}/disable")
+	@PreAuthorize("hasRole('ADMIN')")
+	@Operation(
+		summary = "Disable a product",
+		description = "Sets product status to INACTIVE. Admin only.",
+		security = @SecurityRequirement(name = "bearerAuth")
+	)
+	public ResponseEntity<ProductResponse> disableProduct(@PathVariable UUID productId) {
+		log.info("Admin disabling product with ID: {}", productId);
+		ProductResponse response = productService.disableProduct(productId);
+		return ResponseEntity.ok(response);
 	}
 
 }

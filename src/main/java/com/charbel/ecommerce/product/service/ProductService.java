@@ -2,17 +2,23 @@ package com.charbel.ecommerce.product.service;
 
 import com.charbel.ecommerce.category.service.CategoryService;
 import com.charbel.ecommerce.product.dto.*;
+import jakarta.persistence.EntityNotFoundException;
 import com.charbel.ecommerce.product.entity.Product;
 import com.charbel.ecommerce.product.entity.ProductVariant;
 import com.charbel.ecommerce.product.repository.ProductRepository;
 import com.charbel.ecommerce.product.repository.ProductVariantRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -85,6 +91,57 @@ public class ProductService {
 				.collect(Collectors.toList());
 	}
 
+	public List<LowStockResponse> getLowStockVariants() {
+		log.info("Fetching low stock variants");
+		List<ProductVariant> lowStockVariants = productVariantRepository.findLowStockVariants(5);
+		
+		return lowStockVariants.stream()
+				.map(this::mapToLowStockResponse)
+				.collect(Collectors.toList());
+	}
+
+	@Transactional
+	public AddStockResponse addStockToVariants(AddStockRequest request) {
+		log.info("Adding stock to {} variants", request.getStockUpdates().size());
+		
+		List<UUID> variantIds = request.getStockUpdates().stream()
+				.map(VariantStockUpdate::getVariantId)
+				.collect(Collectors.toList());
+
+		Map<UUID, ProductVariant> variantMap = productVariantRepository.findAllById(variantIds)
+				.stream()
+				.collect(Collectors.toMap(ProductVariant::getId, Function.identity()));
+
+		List<VariantStockUpdateResult> results = request.getStockUpdates().stream()
+				.map(update -> {
+					ProductVariant variant = variantMap.get(update.getVariantId());
+					if (variant == null) {
+						throw new EntityNotFoundException("Variant not found with ID: " + update.getVariantId());
+					}
+
+					Integer previousStock = variant.getStock();
+					Integer newStock = previousStock + update.getStockToAdd();
+					variant.setStock(newStock);
+
+					return VariantStockUpdateResult.builder()
+							.variantId(variant.getId())
+							.sku(variant.getSku())
+							.previousStock(previousStock)
+							.newStock(newStock)
+							.stockAdded(update.getStockToAdd())
+							.build();
+				})
+				.collect(Collectors.toList());
+
+		productVariantRepository.saveAll(variantMap.values());
+
+		log.info("Successfully updated stock for {} variants", results.size());
+		return AddStockResponse.builder()
+				.updatedVariantsCount(results.size())
+				.results(results)
+				.build();
+	}
+
 	private ProductResponse mapToProductResponse(Product product) {
 		List<ProductVariantResponse> variantResponses = product.getVariants().stream()
 				.map(this::mapToVariantResponse)
@@ -124,5 +181,25 @@ public class ProductService {
 				.productName(variant.getProduct().getName())
 				.productDescription(variant.getProduct().getDescription())
 				.build();
+	}
+
+	public Page<ProductResponse> getProducts(Pageable pageable) {
+		log.info("Fetching paginated products");
+		Page<Product> products = productRepository.findAllProductsWithVariants(pageable);
+		return products.map(this::mapToProductResponse);
+	}
+
+	@Transactional
+	public ProductResponse disableProduct(UUID productId) {
+		log.info("Disabling product with ID: {}", productId);
+		
+		Product product = productRepository.findById(productId)
+				.orElseThrow(() -> new EntityNotFoundException("Product not found with ID: " + productId));
+		
+		product.setStatus(Product.ProductStatus.INACTIVE);
+		Product savedProduct = productRepository.save(product);
+		
+		log.info("Product disabled successfully with ID: {}", productId);
+		return mapToProductResponse(savedProduct);
 	}
 }

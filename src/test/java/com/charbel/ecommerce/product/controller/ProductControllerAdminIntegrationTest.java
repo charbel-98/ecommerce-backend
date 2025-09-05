@@ -1,6 +1,5 @@
-package com.charbel.ecommerce.admin;
+package com.charbel.ecommerce.product.controller;
 
-import com.charbel.ecommerce.auth.service.AuthService;
 import com.charbel.ecommerce.product.entity.Product;
 import com.charbel.ecommerce.product.entity.ProductVariant;
 import com.charbel.ecommerce.product.repository.ProductRepository;
@@ -26,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureWebMvc
 @ActiveProfiles("test")
 @Transactional
-class AdminControllerIntegrationTest {
+class ProductControllerAdminIntegrationTest {
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -82,7 +81,7 @@ class AdminControllerIntegrationTest {
 
 	@Test
 	void getLowStockProducts_ShouldReturnLowStockProducts() throws Exception {
-		mockMvc.perform(get("/admin/low-stock")
+		mockMvc.perform(get("/products/low-stock")
 				.header("Authorization", adminToken))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$").isArray())
@@ -93,7 +92,7 @@ class AdminControllerIntegrationTest {
 
 	@Test
 	void getLowStockProducts_WithoutAuth_ShouldReturnUnauthorized() throws Exception {
-		mockMvc.perform(get("/admin/low-stock"))
+		mockMvc.perform(get("/products/low-stock"))
 				.andExpect(status().isUnauthorized());
 	}
 }
