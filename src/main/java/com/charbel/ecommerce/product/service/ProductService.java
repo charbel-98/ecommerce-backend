@@ -1,5 +1,6 @@
 package com.charbel.ecommerce.product.service;
 
+import com.charbel.ecommerce.category.service.CategoryService;
 import com.charbel.ecommerce.product.dto.*;
 import com.charbel.ecommerce.product.entity.Product;
 import com.charbel.ecommerce.product.entity.ProductVariant;
@@ -20,15 +21,24 @@ public class ProductService {
 
 	private final ProductRepository productRepository;
 	private final ProductVariantRepository productVariantRepository;
+	private final CategoryService categoryService;
 
 	@Transactional
 	public ProductResponse createProduct(CreateProductRequest request) {
 		log.info("Creating new product: {}", request.getName());
 
+		if (request.getCategoryId() != null) {
+			categoryService.validateLeafCategory(request.getCategoryId());
+		}
+
 		Product product = Product.builder()
 				.name(request.getName())
 				.description(request.getDescription())
 				.basePrice(request.getBasePrice())
+				.brandId(request.getBrandId())
+				.categoryId(request.getCategoryId())
+				.gender(request.getGender())
+				.metadata(request.getMetadata())
 				.status(Product.ProductStatus.ACTIVE)
 				.build();
 
