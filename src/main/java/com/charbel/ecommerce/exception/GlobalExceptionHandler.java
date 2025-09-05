@@ -3,6 +3,7 @@ package com.charbel.ecommerce.exception;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -67,6 +68,25 @@ public class GlobalExceptionHandler {
 				.error("Validation Failed").message("Invalid input data")
 				.path(request.getDescription(false).replace("uri=", "")).timestamp(LocalDateTime.now())
 				.validationErrors(errors).build();
+
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+	}
+
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
+			WebRequest request) {
+		log.warn("Request body missing or malformed: {}", ex.getMessage());
+
+		String message = "Request body is required";
+		if (ex.getMessage() != null && ex.getMessage().contains("Required request body is missing")) {
+			message = "Request body is required and cannot be empty";
+		} else if (ex.getMessage() != null && ex.getMessage().contains("JSON parse error")) {
+			message = "Invalid JSON format in request body";
+		}
+
+		ErrorResponse errorResponse = ErrorResponse.builder().status(HttpStatus.BAD_REQUEST.value())
+				.error("Bad Request").message(message)
+				.path(request.getDescription(false).replace("uri=", "")).timestamp(LocalDateTime.now()).build();
 
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
 	}

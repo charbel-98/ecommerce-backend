@@ -29,20 +29,132 @@ Enum userRole {
 }
 
 ////////////////////////////////////////////////////
+// PURPLE — Brands & Categories
+ brands {
+  id UUID [pk]
+  name varchar [unique, not null]
+  slug varchar [unique, not null] // e.g. "nike", "adidas"
+  description text
+  logoUrl varchar
+  websiteUrl varchar
+  status brandStatus [not null, default: 'ACTIVE']
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+}
+
+Enum brandStatus {
+  ACTIVE
+  INACTIVE
+}
+
+ categories {
+  id UUID [pk]
+  name varchar [not null]
+  slug varchar [unique, not null] // e.g. "mens-clothing", "womens-shoes"
+  description text
+  parentId UUID // for hierarchical categories
+  level int [not null, default: 0] // 0=root, 1=subcategory, etc.
+  sortOrder int [not null, default: 0]
+  isActive boolean [not null, default: true]
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+}
+
+////////////////////////////////////////////////////
 // BLUE — Catalog & Variants
  products {
   id UUID pk
   name varchar [not null]
   description text
   basePrice int [not null] // in cents (smallest currency unit)
+  brandId UUID [not null] // foreign key to brands
+  categoryId UUID [not null] // foreign key to categories
+  gender genderType [not null]
   status productStatus [not null, default: 'ACTIVE']
+  metadata jsonb // SEO, tags, special attributes
   createdAt datetime [not null]
   updatedAt datetime [not null]
+}
+
+Enum genderType {
+  MEN
+  WOMEN
+  KIDS
+  UNISEX
 }
 
 Enum productStatus {
   ACTIVE
   INACTIVE
+}
+
+// Fashion-specific filter enums
+Enum sizeType {
+  XS
+  S
+  M
+  L
+  XL
+  XXL
+  XXXL
+  // Numeric sizes for shoes, etc. will be in attributes JSONB
+}
+
+Enum colorFamily {
+  BLACK
+  WHITE
+  GRAY
+  BROWN
+  BEIGE
+  RED
+  PINK
+  ORANGE
+  YELLOW
+  GREEN
+  BLUE
+  PURPLE
+  NAVY
+  MULTICOLOR
+}
+
+Enum materialType {
+  COTTON
+  POLYESTER
+  WOOL
+  SILK
+  LEATHER
+  DENIM
+  LINEN
+  CASHMERE
+  NYLON
+  SPANDEX
+  BLEND
+}
+
+Enum seasonType {
+  SPRING
+  SUMMER
+  FALL
+  WINTER
+  ALL_SEASON
+}
+
+Enum occasionType {
+  CASUAL
+  FORMAL
+  BUSINESS
+  SPORT
+  PARTY
+  BEACH
+  OUTDOOR
+}
+
+Enum fitType {
+  SLIM
+  REGULAR
+  LOOSE
+  OVERSIZED
+  TAILORED
 }
 
  product_variants {
@@ -52,6 +164,18 @@ Enum productStatus {
   attributes jsonb [not null] // e.g. {"size": "M", "color": "Red"}
   price int [not null] // in cents
   stock int [not null, default: 0]
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+}
+
+ product_images {
+  id UUID [pk]
+  productId UUID [not null]
+  variantId UUID // optional - for variant-specific images
+  imageUrl varchar [not null]
+  altText varchar
+  isPrimary boolean [not null, default: false]
+  sortOrder int [not null, default: 0]
   createdAt datetime [not null]
   updatedAt datetime [not null]
 }
@@ -123,8 +247,15 @@ Enum orderStatus {
  audit_logs.userId > users.id
  refresh_tokens.userId > users.id
 
-// Products → Variants
+// Brands & Categories → Products
+ products.brandId > brands.id
+ products.categoryId > categories.id
+ categories.parentId > categories.id // self-referencing for hierarchy
+
+// Products → Variants & Images
  product_variants.productId > products.id
+ product_images.productId > products.id
+ product_images.variantId > product_variants.id // optional
 
 // Cart → Cart Items → Variants
  cart_items.cartId > carts.id
@@ -133,3 +264,43 @@ Enum orderStatus {
 // Orders → Order Items → Variants
  order_items.orderId > orders.id
  order_items.variantId > product_variants.id
+
+////////////////////////////////////////////////////
+// INDEXES (for performance)
+////////////////////////////////////////////////////
+
+Table categories {
+  indexes {
+    parentId [name: 'idx_categories_parent']
+    slug [name: 'idx_categories_slug']
+    (level, sortOrder) [name: 'idx_categories_hierarchy']
+  }
+}
+
+Table products {
+  indexes {
+    brandId [name: 'idx_products_brand']
+    categoryId [name: 'idx_products_category']
+    gender [name: 'idx_products_gender']
+    status [name: 'idx_products_status']
+    (brandId, categoryId, gender) [name: 'idx_products_filter']
+  }
+}
+
+Table product_variants {
+  indexes {
+    productId [name: 'idx_variants_product']
+    sku [name: 'idx_variants_sku']
+    attributes [name: 'idx_variants_attributes', type: gin] // GIN index for JSONB
+    stock [name: 'idx_variants_stock']
+  }
+}
+
+Table product_images {
+  indexes {
+    productId [name: 'idx_images_product']
+    variantId [name: 'idx_images_variant']
+    isPrimary [name: 'idx_images_primary']
+    (productId, sortOrder) [name: 'idx_images_sort']
+  }
+}
