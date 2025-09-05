@@ -19,8 +19,9 @@ spring:
 
 security:
   jwt:
-    secret: ${JWT_SECRET:mySecretKey}
-    expiration: ${JWT_EXPIRATION:86400000}
+    secret: ${JWT_SECRET:ThisIsAVeryLongAndSecureJWTSecretKeyForHMACSHA256Algorithm}
+    expiration: ${JWT_EXPIRATION:86400000} # 24 hours
+    refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000} # 7 days
 
 ---
 spring:
@@ -29,17 +30,16 @@ spring:
       on-profile: dev
   
   datasource:
-    url: jdbc:h2:mem:testdb
-    driverClassName: org.h2.Driver
-    username: sa
-    password: password
-  
-  h2:
-    console:
-      enabled: true
+    url: jdbc:postgresql://localhost:5432/ecommerce_db
+    username: ${DATABASE_USERNAME:${USER}}
+    password: ${DATABASE_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
   
   jpa:
     show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
 ---
 spring:
