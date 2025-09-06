@@ -226,6 +226,49 @@ Enum orderStatus {
 }
 
 ////////////////////////////////////////////////////
+// YELLOW — Events & Discounts
+ events {
+  id UUID [pk]
+  name varchar [not null]
+  description text
+  imageUrl varchar [not null] // required CDN URL
+  startDate datetime [not null]
+  endDate datetime [not null]
+  status eventStatus [not null, default: 'ACTIVE']
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+}
+
+Enum eventStatus {
+  ACTIVE
+  INACTIVE
+  SCHEDULED
+  EXPIRED
+}
+
+ discounts {
+  id UUID [pk]
+  eventId UUID [not null] // foreign key to events
+  type discountType [not null]
+  value int [not null] // percentage (0-100) or fixed amount in cents
+  minPurchaseAmount int // minimum purchase required in cents
+  maxDiscountAmount int // max discount for percentage type in cents
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+}
+
+Enum discountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+ event_products {
+  eventId UUID [not null]
+  productId UUID [not null]
+  createdAt datetime [not null]
+}
+
+////////////////////////////////////////////////////
 // RED — Logs
  audit_logs {
   id UUID [pk]
@@ -265,6 +308,11 @@ Enum orderStatus {
  order_items.orderId > orders.id
  order_items.variantId > product_variants.id
 
+// Events → Discounts, Event Products
+ discounts.eventId > events.id
+ event_products.eventId > events.id
+ event_products.productId > products.id
+
 ////////////////////////////////////////////////////
 // INDEXES (for performance)
 ////////////////////////////////////////////////////
@@ -302,5 +350,28 @@ Table product_images {
     variantId [name: 'idx_images_variant']
     isPrimary [name: 'idx_images_primary']
     (productId, sortOrder) [name: 'idx_images_sort']
+  }
+}
+
+Table events {
+  indexes {
+    status [name: 'idx_events_status']
+    (startDate, endDate) [name: 'idx_events_dates']
+    (status, startDate, endDate) [name: 'idx_events_active']
+  }
+}
+
+Table discounts {
+  indexes {
+    eventId [name: 'idx_discounts_event']
+    type [name: 'idx_discounts_type']
+  }
+}
+
+Table event_products {
+  indexes {
+    (eventId, productId) [name: 'idx_event_products_composite', unique: true]
+    eventId [name: 'idx_event_products_event']
+    productId [name: 'idx_event_products_product']
   }
 }

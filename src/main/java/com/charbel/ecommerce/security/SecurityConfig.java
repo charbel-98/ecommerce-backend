@@ -38,9 +38,14 @@ public class SecurityConfig {
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 		http.csrf(AbstractHttpConfigurer::disable)
 				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-				.authorizeHttpRequests(auth -> auth.requestMatchers("/auth/**").permitAll()
+				.authorizeHttpRequests(auth -> auth
+						// Public endpoints (no authentication required)
+						.requestMatchers("/auth/register", "/auth/login").permitAll()
 						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-						.requestMatchers("/admin/**").hasRole("ADMIN").anyRequest().authenticated())
+						// Admin endpoints (require ADMIN role)
+						.requestMatchers("/api/admin/**").hasRole("ADMIN")
+						// All other endpoints require authentication (any authenticated user)
+						.anyRequest().authenticated())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authenticationProvider(authenticationProvider())
 				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

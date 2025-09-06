@@ -3,6 +3,7 @@ package com.charbel.ecommerce.product.entity;
 import com.charbel.ecommerce.brand.entity.Brand;
 import com.charbel.ecommerce.category.entity.Category;
 import com.charbel.ecommerce.common.enums.GenderType;
+import com.charbel.ecommerce.event.entity.Event;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,6 +17,7 @@ import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -68,6 +70,9 @@ public class Product {
 
 	@OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	private List<ProductVariant> variants;
+
+	@ManyToMany(mappedBy = "products", fetch = FetchType.LAZY)
+	private Set<Event> events;
 
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)

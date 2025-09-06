@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/brands")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Brands", description = "Brand management endpoints")
@@ -27,7 +27,7 @@ public class BrandController {
     private final BrandService brandService;
 
     // Public endpoints for customers
-    @GetMapping
+    @GetMapping("/brands")
     @Operation(summary = "Get all active brands", description = "Returns all active brands for customer use")
     public ResponseEntity<List<BrandResponse>> getActiveBrands() {
         log.info("Fetching all active brands");
@@ -35,7 +35,7 @@ public class BrandController {
         return ResponseEntity.ok(brands);
     }
 
-    @GetMapping("/{slug}")
+    @GetMapping("/brands/{slug}")
     @Operation(summary = "Get brand by slug", description = "Returns brand details by slug")
     public ResponseEntity<BrandResponse> getBrandBySlug(@PathVariable String slug) {
         log.info("Fetching brand by slug: {}", slug);
@@ -44,7 +44,7 @@ public class BrandController {
     }
 
     // Admin-only endpoints
-    @GetMapping("/admin/all")
+    @GetMapping("/admin/brands")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(
         summary = "Get all brands",
@@ -57,7 +57,7 @@ public class BrandController {
         return ResponseEntity.ok(brands);
     }
 
-    @PostMapping("/admin")
+    @PostMapping("/admin/brands")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(
         summary = "Create a new brand",
@@ -70,7 +70,7 @@ public class BrandController {
         return ResponseEntity.status(HttpStatus.CREATED).body(brand);
     }
 
-    @PutMapping("/admin/{id}")
+    @PutMapping("/admin/brands/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(
         summary = "Update a brand",
@@ -85,7 +85,7 @@ public class BrandController {
         return ResponseEntity.ok(brand);
     }
 
-    @DeleteMapping("/admin/{id}")
+    @DeleteMapping("/admin/brands/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(
         summary = "Delete a brand",

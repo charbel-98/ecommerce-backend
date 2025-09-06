@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/admin/orders")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Admin Orders", description = "Admin order management endpoints")
@@ -24,7 +24,7 @@ public class OrderController {
 
 	private final OrderService orderService;
 
-	@GetMapping
+	@GetMapping("/admin/orders")
 	@PreAuthorize("hasRole('ADMIN')")
 	@Operation(
 		summary = "Get all orders",

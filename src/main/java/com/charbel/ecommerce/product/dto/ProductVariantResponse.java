@@ -1,5 +1,6 @@
 package com.charbel.ecommerce.product.dto;
 
+import com.charbel.ecommerce.product.entity.ProductVariant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,4 +23,16 @@ public class ProductVariantResponse {
 	private Integer stock;
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
+
+	public static ProductVariantResponse fromEntity(ProductVariant variant) {
+		return ProductVariantResponse.builder()
+				.id(variant.getId())
+				.sku(variant.getSku())
+				.attributes(variant.getAttributes())
+				.price(variant.getPrice())
+				.stock(variant.getStock())
+				.createdAt(variant.getCreatedAt())
+				.updatedAt(variant.getUpdatedAt())
+				.build();
+	}
 }

@@ -22,14 +22,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
-@RequestMapping("/categories")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 @Slf4j
 public class CategoryController {
 
     private final CategoryService categoryService;
 
-    @PostMapping
+    // Admin endpoints
+    @PostMapping("/admin/categories")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CategoryResponse> createCategory(@Valid @RequestBody CreateCategoryRequest request) {
         log.info("Creating new category: {}", request.getName());
@@ -37,21 +38,22 @@ public class CategoryController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping
+    // Public endpoints
+    @GetMapping("/categories")
     public ResponseEntity<List<CategoryResponse>> getAllCategories() {
         log.info("Fetching all categories");
         List<CategoryResponse> categories = categoryService.getAllCategories();
         return ResponseEntity.ok(categories);
     }
 
-    @GetMapping("/leaf")
+    @GetMapping("/categories/leaf")
     public ResponseEntity<List<CategoryResponse>> getLeafCategories() {
         log.info("Fetching leaf categories");
         List<CategoryResponse> leafCategories = categoryService.getLeafCategories();
         return ResponseEntity.ok(leafCategories);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/categories/{id}")
     public ResponseEntity<CategoryResponse> getCategoryById(@PathVariable UUID id) {
         log.info("Fetching category with ID: {}", id);
         CategoryResponse category = categoryService.getCategoryById(id);
