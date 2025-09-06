@@ -4,7 +4,9 @@ import com.charbel.ecommerce.category.service.CategoryService;
 import com.charbel.ecommerce.product.dto.*;
 import jakarta.persistence.EntityNotFoundException;
 import com.charbel.ecommerce.product.entity.Product;
+import com.charbel.ecommerce.product.entity.ProductImage;
 import com.charbel.ecommerce.product.entity.ProductVariant;
+import com.charbel.ecommerce.product.repository.ProductImageRepository;
 import com.charbel.ecommerce.product.repository.ProductRepository;
 import com.charbel.ecommerce.product.repository.ProductVariantRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,6 +31,7 @@ public class ProductService {
 
 	private final ProductRepository productRepository;
 	private final ProductVariantRepository productVariantRepository;
+	private final ProductImageRepository productImageRepository;
 	private final CategoryService categoryService;
 
 	@Transactional
@@ -77,6 +81,48 @@ public class ProductService {
 
 		List<ProductVariant> savedVariants = productVariantRepository.saveAll(variants);
 		savedProduct.setVariants(savedVariants);
+
+		// Save product images
+		List<ProductImage> productImages = new ArrayList<>();
+		if (request.getImageUrls() != null) {
+			for (int i = 0; i < request.getImageUrls().size(); i++) {
+				String imageUrl = request.getImageUrls().get(i);
+				ProductImage productImage = ProductImage.builder()
+						.productId(savedProduct.getId())
+						.variantId(null)
+						.imageUrl(imageUrl)
+						.altText("Product image " + (i + 1))
+						.isPrimary(i == 0)
+						.sortOrder(i)
+						.build();
+				productImages.add(productImage);
+			}
+		}
+
+		// Save variant images
+		for (int variantIndex = 0; variantIndex < savedVariants.size(); variantIndex++) {
+			ProductVariant variant = savedVariants.get(variantIndex);
+			ProductVariantRequest variantRequest = request.getVariants().get(variantIndex);
+			
+			if (variantRequest.getImageUrls() != null) {
+				for (int i = 0; i < variantRequest.getImageUrls().size(); i++) {
+					String imageUrl = variantRequest.getImageUrls().get(i);
+					ProductImage variantImage = ProductImage.builder()
+							.productId(savedProduct.getId())
+							.variantId(variant.getId())
+							.imageUrl(imageUrl)
+							.altText("Variant image " + (i + 1))
+							.isPrimary(i == 0)
+							.sortOrder(i)
+							.build();
+					productImages.add(variantImage);
+				}
+			}
+		}
+
+		if (!productImages.isEmpty()) {
+			productImageRepository.saveAll(productImages);
+		}
 
 		log.info("Product created successfully with ID: {}", savedProduct.getId());
 		return mapToProductResponse(savedProduct);

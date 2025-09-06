@@ -39,6 +39,5 @@ public class CreateProductRequest {
 	@Valid
 	private List<ProductVariantRequest> variants;
 	
-	@Valid
-	private List<ProductImageRequest> images;
+	private List<String> imageUrls;
 }
