@@ -26,11 +26,7 @@ public class OrderController {
 
 	@GetMapping("/admin/orders")
 	@PreAuthorize("hasRole('ADMIN')")
-	@Operation(
-		summary = "Get all orders",
-		description = "Returns all orders with details. Admin only.",
-		security = @SecurityRequirement(name = "bearerAuth")
-	)
+	@Operation(summary = "Get all orders", description = "Returns all orders with details. Admin only.", security = @SecurityRequirement(name = "bearerAuth"))
 	public ResponseEntity<List<OrderResponse>> getAllOrders() {
 		log.info("Admin requesting all orders");
 		List<OrderResponse> response = orderService.getAllOrders();

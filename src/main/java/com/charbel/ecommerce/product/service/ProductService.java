@@ -39,8 +39,7 @@ public class ProductService {
 		log.info("Creating new product: {}", request.getName());
 
 		// Validate SKU uniqueness for all variants
-		Set<String> requestedSkus = request.getVariants().stream()
-				.map(ProductVariantRequest::getSku)
+		Set<String> requestedSkus = request.getVariants().stream().map(ProductVariantRequest::getSku)
 				.collect(Collectors.toSet());
 
 		if (requestedSkus.size() != request.getVariants().size()) {
@@ -56,27 +55,17 @@ public class ProductService {
 			categoryService.validateLeafCategory(request.getCategoryId());
 		}
 
-		Product product = Product.builder()
-				.name(request.getName())
-				.description(request.getDescription())
-				.basePrice(request.getBasePrice())
-				.brandId(request.getBrandId())
-				.categoryId(request.getCategoryId())
-				.gender(request.getGender())
-				.metadata(request.getMetadata())
-				.status(Product.ProductStatus.ACTIVE)
+		Product product = Product.builder().name(request.getName()).description(request.getDescription())
+				.basePrice(request.getBasePrice()).brandId(request.getBrandId()).categoryId(request.getCategoryId())
+				.gender(request.getGender()).metadata(request.getMetadata()).status(Product.ProductStatus.ACTIVE)
 				.build();
 
 		Product savedProduct = productRepository.save(product);
 
 		List<ProductVariant> variants = request.getVariants().stream()
-				.map(variantRequest -> ProductVariant.builder()
-						.product(savedProduct)
-						.sku(variantRequest.getSku())
-						.attributes(variantRequest.getAttributes())
-						.price(variantRequest.getPrice())
-						.stock(variantRequest.getStock())
-						.build())
+				.map(variantRequest -> ProductVariant.builder().product(savedProduct).sku(variantRequest.getSku())
+						.attributes(variantRequest.getAttributes()).price(variantRequest.getPrice())
+						.stock(variantRequest.getStock()).build())
 				.collect(Collectors.toList());
 
 		List<ProductVariant> savedVariants = productVariantRepository.saveAll(variants);
@@ -87,14 +76,8 @@ public class ProductService {
 		if (request.getImageUrls() != null) {
 			for (int i = 0; i < request.getImageUrls().size(); i++) {
 				String imageUrl = request.getImageUrls().get(i);
-				ProductImage productImage = ProductImage.builder()
-						.productId(savedProduct.getId())
-						.variantId(null)
-						.imageUrl(imageUrl)
-						.altText("Product image " + (i + 1))
-						.isPrimary(i == 0)
-						.sortOrder(i)
-						.build();
+				ProductImage productImage = ProductImage.builder().productId(savedProduct.getId()).variantId(null)
+						.imageUrl(imageUrl).altText("Product image " + (i + 1)).isPrimary(i == 0).sortOrder(i).build();
 				productImages.add(productImage);
 			}
 		}
@@ -103,18 +86,13 @@ public class ProductService {
 		for (int variantIndex = 0; variantIndex < savedVariants.size(); variantIndex++) {
 			ProductVariant variant = savedVariants.get(variantIndex);
 			ProductVariantRequest variantRequest = request.getVariants().get(variantIndex);
-			
+
 			if (variantRequest.getImageUrls() != null) {
 				for (int i = 0; i < variantRequest.getImageUrls().size(); i++) {
 					String imageUrl = variantRequest.getImageUrls().get(i);
-					ProductImage variantImage = ProductImage.builder()
-							.productId(savedProduct.getId())
-							.variantId(variant.getId())
-							.imageUrl(imageUrl)
-							.altText("Variant image " + (i + 1))
-							.isPrimary(i == 0)
-							.sortOrder(i)
-							.build();
+					ProductImage variantImage = ProductImage.builder().productId(savedProduct.getId())
+							.variantId(variant.getId()).imageUrl(imageUrl).altText("Variant image " + (i + 1))
+							.isPrimary(i == 0).sortOrder(i).build();
 					productImages.add(variantImage);
 				}
 			}
@@ -131,101 +109,66 @@ public class ProductService {
 	public List<LowStockResponse> getLowStockProducts() {
 		log.info("Fetching low stock products");
 		List<ProductVariant> lowStockVariants = productVariantRepository.findLowStockVariants(5);
-		
-		return lowStockVariants.stream()
-				.map(this::mapToLowStockResponse)
-				.collect(Collectors.toList());
+
+		return lowStockVariants.stream().map(this::mapToLowStockResponse).collect(Collectors.toList());
 	}
 
 	public List<LowStockResponse> getLowStockVariants() {
 		log.info("Fetching low stock variants");
 		List<ProductVariant> lowStockVariants = productVariantRepository.findLowStockVariants(5);
-		
-		return lowStockVariants.stream()
-				.map(this::mapToLowStockResponse)
-				.collect(Collectors.toList());
+
+		return lowStockVariants.stream().map(this::mapToLowStockResponse).collect(Collectors.toList());
 	}
 
 	@Transactional
 	public AddStockResponse addStockToVariants(AddStockRequest request) {
 		log.info("Adding stock to {} variants", request.getStockUpdates().size());
-		
-		List<UUID> variantIds = request.getStockUpdates().stream()
-				.map(VariantStockUpdate::getVariantId)
+
+		List<UUID> variantIds = request.getStockUpdates().stream().map(VariantStockUpdate::getVariantId)
 				.collect(Collectors.toList());
 
-		Map<UUID, ProductVariant> variantMap = productVariantRepository.findAllById(variantIds)
-				.stream()
+		Map<UUID, ProductVariant> variantMap = productVariantRepository.findAllById(variantIds).stream()
 				.collect(Collectors.toMap(ProductVariant::getId, Function.identity()));
 
-		List<VariantStockUpdateResult> results = request.getStockUpdates().stream()
-				.map(update -> {
-					ProductVariant variant = variantMap.get(update.getVariantId());
-					if (variant == null) {
-						throw new EntityNotFoundException("Variant not found with ID: " + update.getVariantId());
-					}
+		List<VariantStockUpdateResult> results = request.getStockUpdates().stream().map(update -> {
+			ProductVariant variant = variantMap.get(update.getVariantId());
+			if (variant == null) {
+				throw new EntityNotFoundException("Variant not found with ID: " + update.getVariantId());
+			}
 
-					Integer previousStock = variant.getStock();
-					Integer newStock = previousStock + update.getStockToAdd();
-					variant.setStock(newStock);
+			Integer previousStock = variant.getStock();
+			Integer newStock = previousStock + update.getStockToAdd();
+			variant.setStock(newStock);
 
-					return VariantStockUpdateResult.builder()
-							.variantId(variant.getId())
-							.sku(variant.getSku())
-							.previousStock(previousStock)
-							.newStock(newStock)
-							.stockAdded(update.getStockToAdd())
-							.build();
-				})
-				.collect(Collectors.toList());
+			return VariantStockUpdateResult.builder().variantId(variant.getId()).sku(variant.getSku())
+					.previousStock(previousStock).newStock(newStock).stockAdded(update.getStockToAdd()).build();
+		}).collect(Collectors.toList());
 
 		productVariantRepository.saveAll(variantMap.values());
 
 		log.info("Successfully updated stock for {} variants", results.size());
-		return AddStockResponse.builder()
-				.updatedVariantsCount(results.size())
-				.results(results)
-				.build();
+		return AddStockResponse.builder().updatedVariantsCount(results.size()).results(results).build();
 	}
 
 	private ProductResponse mapToProductResponse(Product product) {
-		List<ProductVariantResponse> variantResponses = product.getVariants().stream()
-				.map(this::mapToVariantResponse)
+		List<ProductVariantResponse> variantResponses = product.getVariants().stream().map(this::mapToVariantResponse)
 				.collect(Collectors.toList());
 
-		return ProductResponse.builder()
-				.id(product.getId())
-				.name(product.getName())
-				.description(product.getDescription())
-				.basePrice(product.getBasePrice())
-				.status(product.getStatus())
-				.variants(variantResponses)
-				.createdAt(product.getCreatedAt())
-				.updatedAt(product.getUpdatedAt())
-				.build();
+		return ProductResponse.builder().id(product.getId()).name(product.getName())
+				.description(product.getDescription()).basePrice(product.getBasePrice()).status(product.getStatus())
+				.variants(variantResponses).createdAt(product.getCreatedAt()).updatedAt(product.getUpdatedAt()).build();
 	}
 
 	private ProductVariantResponse mapToVariantResponse(ProductVariant variant) {
-		return ProductVariantResponse.builder()
-				.id(variant.getId())
-				.sku(variant.getSku())
-				.attributes(variant.getAttributes())
-				.price(variant.getPrice())
-				.stock(variant.getStock())
-				.createdAt(variant.getCreatedAt())
-				.updatedAt(variant.getUpdatedAt())
-				.build();
+		return ProductVariantResponse.builder().id(variant.getId()).sku(variant.getSku())
+				.attributes(variant.getAttributes()).price(variant.getPrice()).stock(variant.getStock())
+				.createdAt(variant.getCreatedAt()).updatedAt(variant.getUpdatedAt()).build();
 	}
 
 	private LowStockResponse mapToLowStockResponse(ProductVariant variant) {
-		return LowStockResponse.builder()
-				.variantId(variant.getId())
-				.sku(variant.getSku())
-				.attributes(variant.getAttributes())
-				.stock(variant.getStock())
-				.productId(variant.getProduct().getId())
-				.productName(variant.getProduct().getName())
-				.productDescription(variant.getProduct().getDescription())
+		return LowStockResponse.builder().variantId(variant.getId()).sku(variant.getSku())
+				.attributes(variant.getAttributes()).stock(variant.getStock()).productId(variant.getProduct().getId())
+				.productName(variant.getProduct().getName()).productDescription(variant.getProduct().getDescription())
 				.build();
 	}
 
@@ -244,13 +187,13 @@ public class ProductService {
 	@Transactional
 	public ProductResponse disableProduct(UUID productId) {
 		log.info("Disabling product with ID: {}", productId);
-		
+
 		Product product = productRepository.findById(productId)
 				.orElseThrow(() -> new EntityNotFoundException("Product not found with ID: " + productId));
-		
+
 		product.setStatus(Product.ProductStatus.INACTIVE);
 		Product savedProduct = productRepository.save(product);
-		
+
 		log.info("Product disabled successfully with ID: {}", productId);
 		return mapToProductResponse(savedProduct);
 	}

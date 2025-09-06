@@ -26,8 +26,7 @@ public class DiscountResponse {
 
 	public static DiscountResponse fromEntity(Discount discount) {
 		return DiscountResponse.builder().id(discount.getId()).type(discount.getType()).value(discount.getValue())
-				.minPurchaseAmount(discount.getMinPurchaseAmount())
-				.maxDiscountAmount(discount.getMaxDiscountAmount()).createdAt(discount.getCreatedAt())
-				.updatedAt(discount.getUpdatedAt()).build();
+				.minPurchaseAmount(discount.getMinPurchaseAmount()).maxDiscountAmount(discount.getMaxDiscountAmount())
+				.createdAt(discount.getCreatedAt()).updatedAt(discount.getUpdatedAt()).build();
 	}
 }

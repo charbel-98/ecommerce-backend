@@ -15,7 +15,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class OrderResponse {
-	
+
 	private UUID id;
 	private UUID userId;
 	private String userEmail;

@@ -15,7 +15,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class ProductVariantResponse {
-	
+
 	private UUID id;
 	private String sku;
 	private Map<String, Object> attributes;
@@ -25,14 +25,8 @@ public class ProductVariantResponse {
 	private LocalDateTime updatedAt;
 
 	public static ProductVariantResponse fromEntity(ProductVariant variant) {
-		return ProductVariantResponse.builder()
-				.id(variant.getId())
-				.sku(variant.getSku())
-				.attributes(variant.getAttributes())
-				.price(variant.getPrice())
-				.stock(variant.getStock())
-				.createdAt(variant.getCreatedAt())
-				.updatedAt(variant.getUpdatedAt())
-				.build();
+		return ProductVariantResponse.builder().id(variant.getId()).sku(variant.getSku())
+				.attributes(variant.getAttributes()).price(variant.getPrice()).stock(variant.getStock())
+				.createdAt(variant.getCreatedAt()).updatedAt(variant.getUpdatedAt()).build();
 	}
 }

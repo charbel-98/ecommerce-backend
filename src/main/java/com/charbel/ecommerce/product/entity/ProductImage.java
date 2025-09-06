@@ -19,43 +19,43 @@ import java.util.UUID;
 @Builder
 public class ProductImage {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.UUID)
+	private UUID id;
 
-    @Column(name = "product_id", nullable = false)
-    private UUID productId;
+	@Column(name = "product_id", nullable = false)
+	private UUID productId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", insertable = false, updatable = false)
-    private Product product;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "product_id", insertable = false, updatable = false)
+	private Product product;
 
-    @Column(name = "variant_id")
-    private UUID variantId;
+	@Column(name = "variant_id")
+	private UUID variantId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "variant_id", insertable = false, updatable = false)
-    private ProductVariant variant;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "variant_id", insertable = false, updatable = false)
+	private ProductVariant variant;
 
-    @Column(name = "image_url", nullable = false)
-    private String imageUrl;
+	@Column(name = "image_url", nullable = false)
+	private String imageUrl;
 
-    @Column(name = "alt_text")
-    private String altText;
+	@Column(name = "alt_text")
+	private String altText;
 
-    @Column(name = "is_primary", nullable = false)
-    @Builder.Default
-    private Boolean isPrimary = false;
+	@Column(name = "is_primary", nullable = false)
+	@Builder.Default
+	private Boolean isPrimary = false;
 
-    @Column(name = "sort_order", nullable = false)
-    @Builder.Default
-    private Integer sortOrder = 0;
+	@Column(name = "sort_order", nullable = false)
+	@Builder.Default
+	private Integer sortOrder = 0;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+	@CreationTimestamp
+	@Column(name = "created_at", nullable = false, updatable = false)
+	private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+	@UpdateTimestamp
+	@Column(name = "updated_at", nullable = false)
+	private LocalDateTime updatedAt;
 }

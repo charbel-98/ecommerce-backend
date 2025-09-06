@@ -30,10 +30,10 @@ public class EventResponse {
 
 	private Event.EventStatus status;
 	private boolean isCurrentlyActive;
-	
+
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	private List<DiscountResponse> discounts;
-	
+
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	private Set<ProductResponse> products;
 

@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Builder
 public class ProductResponse {
-	
+
 	private UUID id;
 	private String name;
 	private String description;
@@ -36,21 +36,15 @@ public class ProductResponse {
 	private LocalDateTime updatedAt;
 
 	public static ProductResponse fromEntity(Product product) {
-		return ProductResponse.builder()
-				.id(product.getId())
-				.name(product.getName())
-				.description(product.getDescription())
-				.basePrice(product.getBasePrice())
+		return ProductResponse.builder().id(product.getId()).name(product.getName())
+				.description(product.getDescription()).basePrice(product.getBasePrice())
 				.brand(product.getBrand() != null ? BrandResponse.fromEntity(product.getBrand()) : null)
 				.category(product.getCategory() != null ? CategoryResponse.fromEntity(product.getCategory()) : null)
-				.gender(product.getGender())
-				.status(product.getStatus())
-				.metadata(product.getMetadata())
-				.variants(product.getVariants() != null 
-					? product.getVariants().stream().map(ProductVariantResponse::fromEntity).collect(Collectors.toList())
-					: null)
-				.createdAt(product.getCreatedAt())
-				.updatedAt(product.getUpdatedAt())
-				.build();
+				.gender(product.getGender()).status(product.getStatus()).metadata(product.getMetadata())
+				.variants(product.getVariants() != null
+						? product.getVariants().stream().map(ProductVariantResponse::fromEntity)
+								.collect(Collectors.toList())
+						: null)
+				.createdAt(product.getCreatedAt()).updatedAt(product.getUpdatedAt()).build();
 	}
 }

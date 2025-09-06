@@ -56,8 +56,7 @@ public class EventController {
 			List<Discount> discounts = null;
 
 			if (request.getDiscounts() != null && !request.getDiscounts().isEmpty()) {
-				discounts = request.getDiscounts().stream().map(DiscountRequest::toEntity)
-						.collect(Collectors.toList());
+				discounts = request.getDiscounts().stream().map(DiscountRequest::toEntity).collect(Collectors.toList());
 			}
 
 			Event createdEvent = eventService.createEvent(event, discounts);
@@ -85,8 +84,7 @@ public class EventController {
 			List<Discount> discounts = null;
 
 			if (request.getDiscounts() != null) {
-				discounts = request.getDiscounts().stream().map(DiscountRequest::toEntity)
-						.collect(Collectors.toList());
+				discounts = request.getDiscounts().stream().map(DiscountRequest::toEntity).collect(Collectors.toList());
 			}
 
 			Event updatedEvent = eventService.updateEvent(id, event, discounts);
@@ -141,9 +139,7 @@ public class EventController {
 	public ResponseEntity<List<EventResponse>> getActiveEvents() {
 
 		List<Event> events = eventService.getActiveEvents();
-		List<EventResponse> response = events.stream()
-				.map(EventResponse::fromEntityBasic)
-				.collect(Collectors.toList());
+		List<EventResponse> response = events.stream().map(EventResponse::fromEntityBasic).collect(Collectors.toList());
 		return ResponseEntity.ok(response);
 	}
 
@@ -151,8 +147,7 @@ public class EventController {
 	@Operation(summary = "Get currently running events", description = "Retrieves events that are currently active and within their date range")
 	public ResponseEntity<List<EventResponse>> getCurrentlyRunningEvents() {
 		List<Event> events = eventService.getCurrentlyRunningEvents();
-		List<EventResponse> response = events.stream().map(EventResponse::fromEntityBasic)
-				.collect(Collectors.toList());
+		List<EventResponse> response = events.stream().map(EventResponse::fromEntityBasic).collect(Collectors.toList());
 		return ResponseEntity.ok(response);
 	}
 

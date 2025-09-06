@@ -12,11 +12,10 @@ import java.util.UUID;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, UUID> {
-	
+
 	@Query("SELECT p FROM Product p LEFT JOIN FETCH p.variants")
 	Page<Product> findAllProductsWithVariants(Pageable pageable);
 
-	@Query("SELECT p FROM Product p LEFT JOIN FETCH p.variants " +
-		   "JOIN p.events e WHERE e.id = :eventId")
+	@Query("SELECT p FROM Product p LEFT JOIN FETCH p.variants " + "JOIN p.events e WHERE e.id = :eventId")
 	Page<Product> findProductsByEventId(@Param("eventId") UUID eventId, Pageable pageable);
 }

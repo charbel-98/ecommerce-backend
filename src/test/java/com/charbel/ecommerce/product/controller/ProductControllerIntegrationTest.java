@@ -48,16 +48,11 @@ class ProductControllerIntegrationTest {
 
 	@BeforeEach
 	void setUp() {
-		User adminUser = User.builder()
-				.email("admin@test.com")
-				.passwordHash(passwordEncoder.encode("password"))
-				.firstName("Admin")
-				.lastName("User")
-				.role(User.UserRole.ADMIN)
-				.build();
-		
+		User adminUser = User.builder().email("admin@test.com").passwordHash(passwordEncoder.encode("password"))
+				.firstName("Admin").lastName("User").role(User.UserRole.ADMIN).build();
+
 		userRepository.save(adminUser);
-		
+
 		// Get admin token (simplified for test)
 		adminToken = "Bearer mock-admin-token";
 	}
@@ -76,11 +71,8 @@ class ProductControllerIntegrationTest {
 		request.setBasePrice(2999);
 		request.setVariants(List.of(variantRequest));
 
-		mockMvc.perform(post("/products")
-				.header("Authorization", adminToken)
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().isCreated())
+		mockMvc.perform(post("/products").header("Authorization", adminToken).contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(request))).andExpect(status().isCreated())
 				.andExpect(jsonPath("$.name").value("Test Product"))
 				.andExpect(jsonPath("$.description").value("Test Description"))
 				.andExpect(jsonPath("$.basePrice").value(2999))
@@ -102,10 +94,8 @@ class ProductControllerIntegrationTest {
 		request.setBasePrice(2999);
 		request.setVariants(List.of(variantRequest));
 
-		mockMvc.perform(post("/products")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().isUnauthorized());
+		mockMvc.perform(post("/products").contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(request))).andExpect(status().isUnauthorized());
 	}
 
 	@Test
@@ -113,10 +103,7 @@ class ProductControllerIntegrationTest {
 		CreateProductRequest request = new CreateProductRequest();
 		// Missing required fields
 
-		mockMvc.perform(post("/products")
-				.header("Authorization", adminToken)
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().isBadRequest());
+		mockMvc.perform(post("/products").header("Authorization", adminToken).contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(request))).andExpect(status().isBadRequest());
 	}
 }

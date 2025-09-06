@@ -11,7 +11,7 @@ import java.util.UUID;
 
 @Repository
 public interface ProductVariantRepository extends JpaRepository<ProductVariant, UUID> {
-	
+
 	@Query("SELECT pv FROM ProductVariant pv JOIN FETCH pv.product WHERE pv.stock < :threshold")
 	List<ProductVariant> findLowStockVariants(int threshold);
 

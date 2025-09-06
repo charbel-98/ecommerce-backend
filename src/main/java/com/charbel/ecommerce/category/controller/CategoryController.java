@@ -27,36 +27,36 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CategoryController {
 
-    private final CategoryService categoryService;
+	private final CategoryService categoryService;
 
-    // Admin endpoints
-    @PostMapping("/admin/categories")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<CategoryResponse> createCategory(@Valid @RequestBody CreateCategoryRequest request) {
-        log.info("Creating new category: {}", request.getName());
-        CategoryResponse response = categoryService.createCategory(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
+	// Admin endpoints
+	@PostMapping("/admin/categories")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<CategoryResponse> createCategory(@Valid @RequestBody CreateCategoryRequest request) {
+		log.info("Creating new category: {}", request.getName());
+		CategoryResponse response = categoryService.createCategory(request);
+		return ResponseEntity.status(HttpStatus.CREATED).body(response);
+	}
 
-    // Public endpoints
-    @GetMapping("/categories")
-    public ResponseEntity<List<CategoryResponse>> getAllCategories() {
-        log.info("Fetching all categories");
-        List<CategoryResponse> categories = categoryService.getAllCategories();
-        return ResponseEntity.ok(categories);
-    }
+	// Public endpoints
+	@GetMapping("/categories")
+	public ResponseEntity<List<CategoryResponse>> getAllCategories() {
+		log.info("Fetching all categories");
+		List<CategoryResponse> categories = categoryService.getAllCategories();
+		return ResponseEntity.ok(categories);
+	}
 
-    @GetMapping("/categories/leaf")
-    public ResponseEntity<List<CategoryResponse>> getLeafCategories() {
-        log.info("Fetching leaf categories");
-        List<CategoryResponse> leafCategories = categoryService.getLeafCategories();
-        return ResponseEntity.ok(leafCategories);
-    }
+	@GetMapping("/categories/leaf")
+	public ResponseEntity<List<CategoryResponse>> getLeafCategories() {
+		log.info("Fetching leaf categories");
+		List<CategoryResponse> leafCategories = categoryService.getLeafCategories();
+		return ResponseEntity.ok(leafCategories);
+	}
 
-    @GetMapping("/categories/{id}")
-    public ResponseEntity<CategoryResponse> getCategoryById(@PathVariable UUID id) {
-        log.info("Fetching category with ID: {}", id);
-        CategoryResponse category = categoryService.getCategoryById(id);
-        return ResponseEntity.ok(category);
-    }
+	@GetMapping("/categories/{id}")
+	public ResponseEntity<CategoryResponse> getCategoryById(@PathVariable UUID id) {
+		log.info("Fetching category with ID: {}", id);
+		CategoryResponse category = categoryService.getCategoryById(id);
+		return ResponseEntity.ok(category);
+	}
 }

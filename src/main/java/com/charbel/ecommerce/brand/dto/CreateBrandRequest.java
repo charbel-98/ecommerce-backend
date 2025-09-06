@@ -6,17 +6,17 @@ import lombok.Data;
 
 @Data
 public class CreateBrandRequest {
-    
-    @NotBlank(message = "Brand name is required")
-    private String name;
-    
-    @NotBlank(message = "Brand slug is required")
-    @Pattern(regexp = "^[a-z0-9-]+$", message = "Slug must contain only lowercase letters, numbers, and hyphens")
-    private String slug;
-    
-    private String description;
-    
-    private String logoUrl;
-    
-    private String websiteUrl;
+
+	@NotBlank(message = "Brand name is required")
+	private String name;
+
+	@NotBlank(message = "Brand slug is required")
+	@Pattern(regexp = "^[a-z0-9-]+$", message = "Slug must contain only lowercase letters, numbers, and hyphens")
+	private String slug;
+
+	private String description;
+
+	private String logoUrl;
+
+	private String websiteUrl;
 }

@@ -99,11 +99,10 @@ public class ProductController {
 
 	@GetMapping("/events/{eventId}/products")
 	@Operation(summary = "Get products by event", description = "Returns a paginated list of products associated with a specific event")
-	public ResponseEntity<Page<ProductResponse>> getProductsByEvent(
-			@PathVariable UUID eventId,
+	public ResponseEntity<Page<ProductResponse>> getProductsByEvent(@PathVariable UUID eventId,
 			@PageableDefault(size = 20) Pageable pageable) {
-		log.info("Fetching products for event ID: {} with pagination: page={}, size={}", 
-				eventId, pageable.getPageNumber(), pageable.getPageSize());
+		log.info("Fetching products for event ID: {} with pagination: page={}, size={}", eventId,
+				pageable.getPageNumber(), pageable.getPageSize());
 		Page<ProductResponse> response = productService.getProductsByEventId(eventId, pageable);
 		return ResponseEntity.ok(response);
 	}

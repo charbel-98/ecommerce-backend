@@ -85,8 +85,8 @@ public class GlobalExceptionHandler {
 		}
 
 		ErrorResponse errorResponse = ErrorResponse.builder().status(HttpStatus.BAD_REQUEST.value())
-				.error("Bad Request").message(message)
-				.path(request.getDescription(false).replace("uri=", "")).timestamp(LocalDateTime.now()).build();
+				.error("Bad Request").message(message).path(request.getDescription(false).replace("uri=", ""))
+				.timestamp(LocalDateTime.now()).build();
 
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
 	}

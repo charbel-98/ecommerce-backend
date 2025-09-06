@@ -13,7 +13,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class LowStockResponse {
-	
+
 	private UUID variantId;
 	private String sku;
 	private Map<String, Object> attributes;

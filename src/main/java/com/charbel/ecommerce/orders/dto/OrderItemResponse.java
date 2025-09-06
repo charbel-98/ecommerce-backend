@@ -13,7 +13,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class OrderItemResponse {
-	
+
 	private UUID id;
 	private UUID variantId;
 	private String sku;

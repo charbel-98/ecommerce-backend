@@ -16,12 +16,32 @@ spring:
   jackson:
     default-property-inclusion: non_null
     date-format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+  
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 security:
   jwt:
     secret: ${JWT_SECRET:ThisIsAVeryLongAndSecureJWTSecretKeyForHMACSHA256Algorithm}
     expiration: ${JWT_EXPIRATION:86400000} # 24 hours
     refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000} # 7 days
+
+# Cloudflare R2 CDN Configuration
+r2:
+  bucket:
+    name: ${R2_BUCKET_NAME}
+  cdn:
+    domain: ${R2_CDN_DOMAIN}
+  account:
+    id: ${R2_ACCOUNT_ID}
+  access:
+    key:
+      id: ${R2_ACCESS_KEY_ID}
+  secret:
+    access:
+      key: ${R2_SECRET_ACCESS_KEY}
 
 
 ---

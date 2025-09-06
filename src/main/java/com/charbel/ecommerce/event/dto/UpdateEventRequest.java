@@ -35,7 +35,7 @@ public class UpdateEventRequest {
 	private List<DiscountRequest> discounts;
 
 	public Event toEntity() {
-		return Event.builder().name(name).description(description).startDate(startDate).endDate(endDate)
-				.status(status).imageUrl(imageUrl).build();
+		return Event.builder().name(name).description(description).startDate(startDate).endDate(endDate).status(status)
+				.imageUrl(imageUrl).build();
 	}
 }
