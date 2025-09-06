@@ -128,4 +128,24 @@ public class ProductController {
 		return ResponseEntity.ok(response);
 	}
 
+	@GetMapping("/products/brand")
+	@Operation(summary = "Get products by brand slug", description = "Returns a paginated list of products from a specific brand using brand slug")
+	public ResponseEntity<Page<ProductResponse>> getProductsByBrandSlug(@RequestParam String brandSlug,
+			@PageableDefault(size = 20) Pageable pageable) {
+		log.info("Fetching products for brand slug: {} with pagination: page={}, size={}", brandSlug,
+				pageable.getPageNumber(), pageable.getPageSize());
+		Page<ProductResponse> response = productService.getProductsByBrandSlug(brandSlug, pageable);
+		return ResponseEntity.ok(response);
+	}
+
+	@GetMapping("/products/category/{categoryId}")
+	@Operation(summary = "Get products by category", description = "Returns a paginated list of products from a specific category")
+	public ResponseEntity<Page<ProductResponse>> getProductsByCategory(@PathVariable UUID categoryId,
+			@PageableDefault(size = 20) Pageable pageable) {
+		log.info("Fetching products for category ID: {} with pagination: page={}, size={}", categoryId,
+				pageable.getPageNumber(), pageable.getPageSize());
+		Page<ProductResponse> response = productService.getProductsByCategoryId(categoryId, pageable);
+		return ResponseEntity.ok(response);
+	}
+
 }

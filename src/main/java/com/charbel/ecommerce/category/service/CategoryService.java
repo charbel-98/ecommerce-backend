@@ -1,11 +1,19 @@
 package com.charbel.ecommerce.category.service;
 
 import com.charbel.ecommerce.category.dto.CategoryResponse;
+import com.charbel.ecommerce.category.dto.CategoryWithProductsResponse;
 import com.charbel.ecommerce.category.dto.CreateCategoryRequest;
+import com.charbel.ecommerce.category.dto.PaginatedCategoriesResponse;
 import com.charbel.ecommerce.category.entity.Category;
 import com.charbel.ecommerce.category.repository.CategoryRepository;
+import com.charbel.ecommerce.product.dto.ProductResponse;
+import com.charbel.ecommerce.product.entity.Product;
+import com.charbel.ecommerce.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +27,7 @@ import java.util.stream.Collectors;
 public class CategoryService {
 
 	private final CategoryRepository categoryRepository;
+	private final ProductRepository productRepository;
 
 	@Transactional
 	public CategoryResponse createCategory(CreateCategoryRequest request) {
@@ -92,10 +101,57 @@ public class CategoryService {
 		}
 	}
 
+	@Transactional(readOnly = true)
+	public PaginatedCategoriesResponse getLeafCategoriesWithProducts(int page, int size) {
+		log.info("Fetching leaf categories with products - page: {}, size: {}", page, size);
+		
+		Pageable pageable = PageRequest.of(page, size);
+		Page<Category> categoriesPage = categoryRepository.findLeafCategoriesPageable(pageable);
+		
+		List<CategoryWithProductsResponse> categoriesWithProducts = categoriesPage.getContent().stream()
+				.map(this::mapToCategoryWithProducts)
+				.filter(categoryResponse -> !categoryResponse.getProducts().isEmpty())
+				.collect(Collectors.toList());
+
+		return PaginatedCategoriesResponse.builder()
+				.categories(categoriesWithProducts)
+				.currentPage(categoriesPage.getNumber())
+				.totalPages(categoriesPage.getTotalPages())
+				.totalElements((long) categoriesWithProducts.size())
+				.pageSize(categoriesPage.getSize())
+				.hasNext(categoriesPage.hasNext())
+				.hasPrevious(categoriesPage.hasPrevious())
+				.build();
+	}
+
 	private CategoryResponse mapToCategoryResponse(Category category) {
 		return CategoryResponse.builder().id(category.getId()).name(category.getName()).slug(category.getSlug())
 				.description(category.getDescription()).parentId(category.getParentId()).level(category.getLevel())
 				.sortOrder(category.getSortOrder()).isActive(category.getIsActive()).createdAt(category.getCreatedAt())
 				.updatedAt(category.getUpdatedAt()).build();
+	}
+
+	private CategoryWithProductsResponse mapToCategoryWithProducts(Category category) {
+		// Get up to 10 products for this category
+		Pageable productPageable = PageRequest.of(0, 10);
+		Page<Product> productsPage = productRepository.findProductsByCategoryId(category.getId(), productPageable);
+		
+		List<ProductResponse> products = productsPage.getContent().stream()
+				.map(ProductResponse::fromEntity)
+				.collect(Collectors.toList());
+
+		return CategoryWithProductsResponse.builder()
+				.id(category.getId())
+				.name(category.getName())
+				.slug(category.getSlug())
+				.description(category.getDescription())
+				.parentId(category.getParentId())
+				.level(category.getLevel())
+				.sortOrder(category.getSortOrder())
+				.isActive(category.getIsActive())
+				.createdAt(category.getCreatedAt())
+				.updatedAt(category.getUpdatedAt())
+				.products(products)
+				.build();
 	}
 }

@@ -353,4 +353,20 @@ public class ProductService {
 		log.info("Product disabled successfully with ID: {}", productId);
 		return mapToProductResponse(savedProduct);
 	}
+
+	@Transactional(readOnly = true)
+	public Page<ProductResponse> getProductsByBrandSlug(String brandSlug, Pageable pageable) {
+		log.info("Fetching products by brand slug: {} with page: {}, size: {}", brandSlug, pageable.getPageNumber(), pageable.getPageSize());
+		
+		Page<Product> products = productRepository.findProductsByBrandSlug(brandSlug, pageable);
+		return products.map(this::mapToProductResponse);
+	}
+
+	@Transactional(readOnly = true)
+	public Page<ProductResponse> getProductsByCategoryId(UUID categoryId, Pageable pageable) {
+		log.info("Fetching products by category ID: {} with page: {}, size: {}", categoryId, pageable.getPageNumber(), pageable.getPageSize());
+		
+		Page<Product> products = productRepository.findProductsByCategoryId(categoryId, pageable);
+		return products.map(this::mapToProductResponse);
+	}
 }
