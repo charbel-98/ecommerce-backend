@@ -75,6 +75,14 @@
             <version>2.20.142</version>
         </dependency>
         
+        <!-- HTTP Client for Google AI API -->
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+        </dependency>
+        
+        <!-- Jackson for JSON processing (already available via Spring Boot) -->
+        
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>

@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -39,5 +40,6 @@ public class CreateProductRequest {
 	@Valid
 	private List<ProductVariantRequest> variants;
 
-	private List<String> imageUrls;
+	@NotNull(message = "Product image is required")
+	private MultipartFile image;
 }

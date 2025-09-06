@@ -43,6 +43,15 @@ r2:
     access:
       key: ${R2_SECRET_ACCESS_KEY}
 
+# Google Gemini AI Configuration
+gemini:
+  api:
+    key: ${GEMINI_API_KEY}
+    url: ${GEMINI_API_URL:https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent}
+  max:
+    retries: ${GEMINI_MAX_RETRIES:3}
+  timeout: ${GEMINI_TIMEOUT:30000}
+
 
 ---
 spring:
