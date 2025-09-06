@@ -29,11 +29,13 @@ public class UpdateEventRequest {
 	@NotNull(message = "Event status is required")
 	private Event.EventStatus status;
 
+	private String imageUrl;
+
 	@Valid
 	private List<DiscountRequest> discounts;
 
 	public Event toEntity() {
 		return Event.builder().name(name).description(description).startDate(startDate).endDate(endDate)
-				.status(status).build();
+				.status(status).imageUrl(imageUrl).build();
 	}
 }

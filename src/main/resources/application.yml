@@ -23,13 +23,6 @@ security:
     expiration: ${JWT_EXPIRATION:86400000} # 24 hours
     refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000} # 7 days
 
-cloudflare:
-  r2:
-    bucket-name: ${R2_BUCKET_NAME:}
-    cdn-domain: ${R2_CDN_DOMAIN:}
-    account-id: ${R2_ACCOUNT_ID:}
-    access-key-id: ${R2_ACCESS_KEY_ID:}
-    secret-access-key: ${R2_SECRET_ACCESS_KEY:}
 
 ---
 spring:

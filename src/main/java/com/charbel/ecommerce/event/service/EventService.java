@@ -9,15 +9,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.charbel.ecommerce.event.entity.Discount;
 import com.charbel.ecommerce.event.entity.Event;
 import com.charbel.ecommerce.event.repository.DiscountRepository;
 import com.charbel.ecommerce.event.repository.EventRepository;
 import com.charbel.ecommerce.product.entity.Product;
 import com.charbel.ecommerce.product.repository.ProductRepository;
-import com.charbel.ecommerce.service.CloudflareR2Service;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -31,22 +28,12 @@ public class EventService {
 	private final EventRepository eventRepository;
 	private final DiscountRepository discountRepository;
 	private final ProductRepository productRepository;
-	private final CloudflareR2Service r2Service;
 
 	@Transactional
-	public Event createEvent(Event event, MultipartFile imageFile, List<Discount> discounts) {
+	public Event createEvent(Event event, List<Discount> discounts) {
 		// Validate event name uniqueness
 		if (eventRepository.existsByName(event.getName())) {
 			throw new IllegalArgumentException("Event with name '" + event.getName() + "' already exists");
-		}
-
-		// Upload image and set URL
-		try {
-			String imageUrl = r2Service.uploadEventImage(imageFile);
-			event.setImageUrl(imageUrl);
-		} catch (Exception e) {
-			log.error("Failed to upload event image", e);
-			throw new RuntimeException("Failed to upload event image", e);
 		}
 
 		// Save event first
@@ -67,7 +54,7 @@ public class EventService {
 	}
 
 	@Transactional
-	public Event updateEvent(UUID eventId, Event updatedEvent, MultipartFile imageFile, List<Discount> discounts) {
+	public Event updateEvent(UUID eventId, Event updatedEvent, List<Discount> discounts) {
 		Event existingEvent = eventRepository.findById(eventId)
 				.orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
 
@@ -84,18 +71,9 @@ public class EventService {
 		existingEvent.setEndDate(updatedEvent.getEndDate());
 		existingEvent.setStatus(updatedEvent.getStatus());
 
-		// Handle image update
-		if (imageFile != null && !imageFile.isEmpty()) {
-			try {
-				// Delete old image
-				r2Service.deleteEventImage(existingEvent.getImageUrl());
-				// Upload new image
-				String newImageUrl = r2Service.uploadEventImage(imageFile);
-				existingEvent.setImageUrl(newImageUrl);
-			} catch (Exception e) {
-				log.error("Failed to update event image", e);
-				throw new RuntimeException("Failed to update event image", e);
-			}
+		// Update image URL if provided
+		if (updatedEvent.getImageUrl() != null && !updatedEvent.getImageUrl().trim().isEmpty()) {
+			existingEvent.setImageUrl(updatedEvent.getImageUrl());
 		}
 
 		// Update discounts
@@ -122,13 +100,6 @@ public class EventService {
 	public void deleteEvent(UUID eventId) {
 		Event event = eventRepository.findById(eventId)
 				.orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
-
-		// Delete image from CDN
-		try {
-			r2Service.deleteEventImage(event.getImageUrl());
-		} catch (Exception e) {
-			log.warn("Failed to delete event image from CDN: {}", e.getMessage());
-		}
 
 		// Delete discounts (cascade will handle this, but explicit for clarity)
 		discountRepository.deleteByEventId(eventId);

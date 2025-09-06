@@ -30,11 +30,14 @@ public class CreateEventRequest {
 
 	private Event.EventStatus status = Event.EventStatus.SCHEDULED;
 
+	@NotBlank(message = "Image URL is required")
+	private String imageUrl;
+
 	@Valid
 	private List<DiscountRequest> discounts;
 
 	public Event toEntity() {
 		return Event.builder().name(name).description(description).startDate(startDate).endDate(endDate)
-				.status(status != null ? status : Event.EventStatus.SCHEDULED).build();
+				.status(status != null ? status : Event.EventStatus.SCHEDULED).imageUrl(imageUrl).build();
 	}
 }
