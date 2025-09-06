@@ -118,6 +118,15 @@ public class EventService {
 		return eventRepository.findAll(pageable);
 	}
 
+	public Event getEventByIdForAdmin(UUID eventId) {
+		return eventRepository.findByIdWithDiscountsAndProducts(eventId)
+				.orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
+	}
+
+	public Page<Event> getAllEventsForAdmin(Pageable pageable) {
+		return eventRepository.findAllWithDiscountsAndProducts(pageable);
+	}
+
 	public List<Event> getActiveEvents() {
 		return eventRepository.findByStatusOrderByStartDateDesc(Event.EventStatus.ACTIVE);
 	}

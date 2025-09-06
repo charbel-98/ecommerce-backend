@@ -38,8 +38,7 @@ public class ProductResponse {
 
 	public static ProductResponse fromEntity(Product product) {
 		return ProductResponse.builder().id(product.getId()).name(product.getName())
-				.description(product.getDescription()).basePrice(product.getBasePrice())
-				.brandId(product.getBrandId())
+				.description(product.getDescription()).basePrice(product.getBasePrice()).brandId(product.getBrandId())
 				.brandName(product.getBrand() != null ? product.getBrand().getName() : null)
 				.category(product.getCategory() != null ? CategoryResponse.fromEntity(product.getCategory()) : null)
 				.gender(product.getGender()).status(product.getStatus()).metadata(product.getMetadata())

@@ -35,9 +35,9 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
 	@Query("SELECT c FROM Category c WHERE c.isActive = true ORDER BY c.level ASC, c.sortOrder ASC, c.name ASC")
 	List<Category> findAllActiveHierarchical();
 
-	@Query("SELECT c FROM Category c WHERE c.isActive = true AND c.id NOT IN " +
-			"(SELECT DISTINCT p.id FROM Category p WHERE p.id IN " +
-			"(SELECT ch.parentId FROM Category ch WHERE ch.parentId IS NOT NULL AND ch.isActive = true)) " +
-			"ORDER BY c.sortOrder ASC, c.name ASC")
+	@Query("SELECT c FROM Category c WHERE c.isActive = true AND c.id NOT IN "
+			+ "(SELECT DISTINCT p.id FROM Category p WHERE p.id IN "
+			+ "(SELECT ch.parentId FROM Category ch WHERE ch.parentId IS NOT NULL AND ch.isActive = true)) "
+			+ "ORDER BY c.sortOrder ASC, c.name ASC")
 	Page<Category> findLeafCategoriesPageable(Pageable pageable);
 }

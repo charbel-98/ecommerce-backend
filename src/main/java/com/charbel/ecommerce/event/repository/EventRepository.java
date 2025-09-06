@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,6 +30,9 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
 
 	@Query("SELECT e FROM Event e LEFT JOIN FETCH e.discounts WHERE e.id = :id")
 	Optional<Event> findByIdWithDiscounts(@Param("id") UUID id);
+
+	@Query("SELECT DISTINCT e FROM Event e LEFT JOIN FETCH e.discounts LEFT JOIN FETCH e.products")
+	Page<Event> findAllWithDiscountsAndProducts(Pageable pageable);
 
 	boolean existsByName(String name);
 }

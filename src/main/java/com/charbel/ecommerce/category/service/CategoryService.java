@@ -1,27 +1,30 @@
 package com.charbel.ecommerce.category.service;
 
-import com.charbel.ecommerce.category.dto.CategoryResponse;
-import com.charbel.ecommerce.category.dto.CategoryWithProductsResponse;
-import com.charbel.ecommerce.category.dto.CreateCategoryRequest;
-import com.charbel.ecommerce.category.dto.PaginatedCategoriesResponse;
-import com.charbel.ecommerce.category.entity.Category;
-import com.charbel.ecommerce.category.repository.CategoryRepository;
-import com.charbel.ecommerce.cdn.service.CdnService;
-import com.charbel.ecommerce.product.dto.ProductResponse;
-import com.charbel.ecommerce.product.entity.Product;
-import com.charbel.ecommerce.product.repository.ProductRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import com.charbel.ecommerce.category.dto.CategoryResponse;
+import com.charbel.ecommerce.category.dto.CategoryWithProductsResponse;
+import com.charbel.ecommerce.category.dto.CreateCategoryRequest;
+import com.charbel.ecommerce.category.dto.PaginatedCategoriesResponse;
+import com.charbel.ecommerce.category.dto.UpdateCategoryRequest;
+import com.charbel.ecommerce.category.entity.Category;
+import com.charbel.ecommerce.category.repository.CategoryRepository;
+import com.charbel.ecommerce.cdn.service.CdnService;
+import com.charbel.ecommerce.product.dto.ProductResponse;
+import com.charbel.ecommerce.product.entity.Product;
+import com.charbel.ecommerce.product.repository.ProductRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -50,7 +53,8 @@ public class CategoryService {
 					"Cannot create category at level " + level + ". Maximum allowed level is 2");
 		}
 
-		// Prevent creating level 0 categories (though this is already prevented by requiring parentId)
+		// Prevent creating level 0 categories (though this is already prevented by
+		// requiring parentId)
 		if (level == 0) {
 			throw new IllegalArgumentException(
 					"Cannot create root level (level 0) categories. Root categories are pre-loaded in the database");
@@ -77,21 +81,95 @@ public class CategoryService {
 			}
 		}
 
-		Category category = Category.builder()
-				.name(request.getName())
-				.slug(request.getSlug())
-				.description(request.getDescription())
-				.imageUrl(imageUrl)
-				.parentId(request.getParentId())
-				.level(level)
-				.sortOrder(request.getSortOrder())
-				.isActive(true)
-				.build();
+		Category category = Category.builder().name(request.getName()).slug(request.getSlug())
+				.description(request.getDescription()).imageUrl(imageUrl).parentId(request.getParentId()).level(level)
+				.sortOrder(request.getSortOrder()).isActive(true).build();
 
 		Category savedCategory = categoryRepository.save(category);
-		log.info("Category created successfully with ID: {}, level: {}", savedCategory.getId(), savedCategory.getLevel());
+		log.info("Category created successfully with ID: {}, level: {}", savedCategory.getId(),
+				savedCategory.getLevel());
 
 		return mapToCategoryResponse(savedCategory);
+	}
+
+	@Transactional
+	public CategoryResponse updateCategory(UUID id, UpdateCategoryRequest request) {
+		log.info("Updating category with ID: {}", id);
+
+		Category existing = categoryRepository.findById(id)
+				.orElseThrow(() -> new IllegalArgumentException("Category with ID '" + id + "' not found"));
+
+		// Disallow updates to root (level 0) categories
+		if (existing.getLevel() != null && existing.getLevel() == 0) {
+			throw new IllegalArgumentException("Root categories (level 0) cannot be updated");
+		}
+
+		// Validate and update name
+		if (request.getName() != null && !request.getName().equals(existing.getName())) {
+			if (categoryRepository.existsByName(request.getName())) {
+				throw new IllegalArgumentException("Category with name '" + request.getName() + "' already exists");
+			}
+			existing.setName(request.getName());
+		}
+
+		// Validate and update slug
+		if (request.getSlug() != null && !request.getSlug().equals(existing.getSlug())) {
+			if (categoryRepository.existsBySlug(request.getSlug())) {
+				throw new IllegalArgumentException("Category with slug '" + request.getSlug() + "' already exists");
+			}
+			existing.setSlug(request.getSlug());
+		}
+
+		// Update description
+		if (request.getDescription() != null) {
+			existing.setDescription(request.getDescription());
+		}
+
+		// Update parent and level if provided
+		if (request.getParentId() != null && !request.getParentId().equals(existing.getParentId())) {
+			Category parentCategory = categoryRepository.findById(request.getParentId())
+					.orElseThrow(() -> new IllegalArgumentException(
+							"Parent category with ID '" + request.getParentId() + "' not found"));
+
+			int newLevel = parentCategory.getLevel() + 1;
+			if (newLevel > 2) {
+				throw new IllegalArgumentException(
+						"Cannot set category at level " + newLevel + ". Maximum allowed level is 2");
+			}
+
+			existing.setParentId(request.getParentId());
+			existing.setLevel(newLevel);
+		}
+
+		// Update sort order
+		if (request.getSortOrder() != null) {
+			existing.setSortOrder(request.getSortOrder());
+		}
+
+		// Update isActive
+		if (request.getIsActive() != null) {
+			existing.setIsActive(request.getIsActive());
+		}
+
+		// Handle image replacement: delete old then upload new
+		if (request.getImage() != null && !request.getImage().isEmpty()) {
+			try {
+				String oldImageUrl = existing.getImageUrl();
+				if (oldImageUrl != null && !oldImageUrl.isBlank()) {
+					cdnService.deleteImageByUrl(oldImageUrl);
+				}
+				String newImageUrl = cdnService.uploadImage(request.getImage(), "categories");
+				existing.setImageUrl(newImageUrl);
+				log.info("Category image replaced successfully for ID: {}", id);
+			} catch (IOException e) {
+				log.error("Failed to upload new category image for ID: {}", id, e);
+				throw new RuntimeException("Failed to upload category image: " + e.getMessage(), e);
+			}
+		}
+
+		Category saved = categoryRepository.save(existing);
+		log.info("Category updated successfully with ID: {}", saved.getId());
+		return mapToCategoryResponse(saved);
 	}
 
 	@Transactional(readOnly = true)
@@ -139,55 +217,40 @@ public class CategoryService {
 	@Transactional(readOnly = true)
 	public PaginatedCategoriesResponse getLeafCategoriesWithProducts(int page, int size) {
 		log.info("Fetching leaf categories with products - page: {}, size: {}", page, size);
-		
+
 		Pageable pageable = PageRequest.of(page, size);
 		Page<Category> categoriesPage = categoryRepository.findLeafCategoriesPageable(pageable);
-		
+
 		List<CategoryWithProductsResponse> categoriesWithProducts = categoriesPage.getContent().stream()
 				.map(this::mapToCategoryWithProducts)
-				.filter(categoryResponse -> !categoryResponse.getProducts().isEmpty())
-				.collect(Collectors.toList());
+				.filter(categoryResponse -> !categoryResponse.getProducts().isEmpty()).collect(Collectors.toList());
 
-		return PaginatedCategoriesResponse.builder()
-				.categories(categoriesWithProducts)
-				.currentPage(categoriesPage.getNumber())
-				.totalPages(categoriesPage.getTotalPages())
-				.totalElements((long) categoriesWithProducts.size())
-				.pageSize(categoriesPage.getSize())
-				.hasNext(categoriesPage.hasNext())
-				.hasPrevious(categoriesPage.hasPrevious())
-				.build();
+		return PaginatedCategoriesResponse.builder().categories(categoriesWithProducts)
+				.currentPage(categoriesPage.getNumber()).totalPages(categoriesPage.getTotalPages())
+				.totalElements((long) categoriesWithProducts.size()).pageSize(categoriesPage.getSize())
+				.hasNext(categoriesPage.hasNext()).hasPrevious(categoriesPage.hasPrevious()).build();
 	}
 
 	private CategoryResponse mapToCategoryResponse(Category category) {
 		return CategoryResponse.builder().id(category.getId()).name(category.getName()).slug(category.getSlug())
-				.description(category.getDescription()).imageUrl(category.getImageUrl()).parentId(category.getParentId())
-				.level(category.getLevel()).sortOrder(category.getSortOrder()).isActive(category.getIsActive())
-				.createdAt(category.getCreatedAt()).updatedAt(category.getUpdatedAt()).build();
+				.description(category.getDescription()).imageUrl(category.getImageUrl())
+				.parentId(category.getParentId()).level(category.getLevel()).sortOrder(category.getSortOrder())
+				.isActive(category.getIsActive()).createdAt(category.getCreatedAt()).updatedAt(category.getUpdatedAt())
+				.build();
 	}
 
 	private CategoryWithProductsResponse mapToCategoryWithProducts(Category category) {
 		// Get up to 10 products for this category
 		Pageable productPageable = PageRequest.of(0, 10);
 		Page<Product> productsPage = productRepository.findProductsByCategoryId(category.getId(), productPageable);
-		
-		List<ProductResponse> products = productsPage.getContent().stream()
-				.map(ProductResponse::fromEntity)
+
+		List<ProductResponse> products = productsPage.getContent().stream().map(ProductResponse::fromEntity)
 				.collect(Collectors.toList());
 
-		return CategoryWithProductsResponse.builder()
-				.id(category.getId())
-				.name(category.getName())
-				.slug(category.getSlug())
-				.description(category.getDescription())
-				.imageUrl(category.getImageUrl())
-				.parentId(category.getParentId())
-				.level(category.getLevel())
-				.sortOrder(category.getSortOrder())
-				.isActive(category.getIsActive())
-				.createdAt(category.getCreatedAt())
-				.updatedAt(category.getUpdatedAt())
-				.products(products)
-				.build();
+		return CategoryWithProductsResponse.builder().id(category.getId()).name(category.getName())
+				.slug(category.getSlug()).description(category.getDescription()).imageUrl(category.getImageUrl())
+				.parentId(category.getParentId()).level(category.getLevel()).sortOrder(category.getSortOrder())
+				.isActive(category.getIsActive()).createdAt(category.getCreatedAt()).updatedAt(category.getUpdatedAt())
+				.products(products).build();
 	}
 }

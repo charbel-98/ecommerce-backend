@@ -1,4 +1,4 @@
-package com.charbel.ecommerce.category.dto;
+package com.charbel.ecommerce.event.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,9 +11,9 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PaginatedCategoriesResponse {
+public class PaginatedAdminEventsResponse {
 
-	private List<CategoryWithProductsResponse> categories;
+	private List<AdminEventResponse> events;
 	private int currentPage;
 	private int totalPages;
 	private long totalElements;

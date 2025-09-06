@@ -38,7 +38,8 @@ public class CategoryResponse {
 		CategoryResponse response = CategoryResponse.builder().id(category.getId()).name(category.getName())
 				.slug(category.getSlug()).description(category.getDescription()).imageUrl(category.getImageUrl())
 				.parentId(category.getParentId()).level(category.getLevel()).sortOrder(category.getSortOrder())
-				.isActive(category.getIsActive()).createdAt(category.getCreatedAt()).updatedAt(category.getUpdatedAt()).build();
+				.isActive(category.getIsActive()).createdAt(category.getCreatedAt()).updatedAt(category.getUpdatedAt())
+				.build();
 
 		if (includeChildren && category.getChildren() != null) {
 			response.setChildren(category.getChildren().stream().map(child -> CategoryResponse.fromEntity(child, true))

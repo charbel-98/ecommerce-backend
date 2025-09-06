@@ -21,10 +21,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.charbel.ecommerce.event.dto.AddProductsToEventRequest;
+import com.charbel.ecommerce.event.dto.AdminEventResponse;
 import com.charbel.ecommerce.event.dto.CreateEventRequest;
 import com.charbel.ecommerce.event.dto.DiscountRequest;
 import com.charbel.ecommerce.event.dto.DiscountResponse;
 import com.charbel.ecommerce.event.dto.EventResponse;
+import com.charbel.ecommerce.event.dto.PaginatedAdminEventsResponse;
 import com.charbel.ecommerce.event.dto.UpdateEventRequest;
 import com.charbel.ecommerce.event.entity.Discount;
 import com.charbel.ecommerce.event.entity.Event;
@@ -33,6 +35,7 @@ import com.charbel.ecommerce.event.service.EventService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -111,6 +114,49 @@ public class EventController {
 		} catch (Exception e) {
 			log.error("Error deleting event with id: {}", id, e);
 			throw new RuntimeException("Failed to delete event");
+		}
+	}
+
+	@GetMapping("/admin/events/{id}")
+	@PreAuthorize("hasRole('ADMIN')")
+	@Operation(summary = "Get event by ID for admin", description = "Retrieves detailed event information with full discounts and products data for admin")
+	public ResponseEntity<AdminEventResponse> getEventByIdForAdmin(@PathVariable UUID id) {
+		try {
+			Event event = eventService.getEventByIdForAdmin(id);
+			AdminEventResponse response = AdminEventResponse.fromEntity(event);
+			return ResponseEntity.ok(response);
+		} catch (EntityNotFoundException e) {
+			log.error("Event not found with id: {}", id);
+			throw e;
+		} catch (Exception e) {
+			log.error("Error fetching event for admin with id: {}", id, e);
+			throw new RuntimeException("Failed to fetch event");
+		}
+	}
+
+	@GetMapping("/admin/events")
+	@PreAuthorize("hasRole('ADMIN')")
+	@Operation(summary = "Get all events for admin", description = "Retrieves paginated list of all events with full details for admin")
+	public ResponseEntity<PaginatedAdminEventsResponse> getAllEventsForAdmin(
+			@RequestParam(defaultValue = "0") @Parameter(description = "Page number") int page,
+			@RequestParam(defaultValue = "20") @Parameter(description = "Page size") int size) {
+
+		try {
+			Pageable pageable = PageRequest.of(page, size);
+			Page<Event> events = eventService.getAllEventsForAdmin(pageable);
+
+			List<AdminEventResponse> eventResponses = events.getContent().stream().map(AdminEventResponse::fromEntity)
+					.collect(Collectors.toList());
+
+			PaginatedAdminEventsResponse response = PaginatedAdminEventsResponse.builder().events(eventResponses)
+					.currentPage(events.getNumber()).totalPages(events.getTotalPages())
+					.totalElements(events.getTotalElements()).pageSize(events.getSize()).hasNext(events.hasNext())
+					.hasPrevious(events.hasPrevious()).build();
+
+			return ResponseEntity.ok(response);
+		} catch (Exception e) {
+			log.error("Error fetching events for admin", e);
+			throw new RuntimeException("Failed to fetch events");
 		}
 	}
 
