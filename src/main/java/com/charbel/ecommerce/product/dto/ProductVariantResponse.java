@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -21,6 +22,7 @@ public class ProductVariantResponse {
 	private Map<String, Object> attributes;
 	private Integer price;
 	private Integer stock;
+	private List<String> imageUrls;
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
 

@@ -281,18 +281,38 @@ public class ProductService {
 	}
 
 	private ProductResponse mapToProductResponse(Product product) {
-		List<ProductVariantResponse> variantResponses = product.getVariants().stream().map(this::mapToVariantResponse)
+		// Get product images (not variant-specific)
+		List<String> productImageUrls = productImageRepository.findByProductIdAndVariantIdIsNull(product.getId())
+				.stream()
+				.map(ProductImage::getImageUrl)
 				.collect(Collectors.toList());
 
-		return ProductResponse.builder().id(product.getId()).name(product.getName())
-				.description(product.getDescription()).basePrice(product.getBasePrice()).status(product.getStatus())
-				.variants(variantResponses).createdAt(product.getCreatedAt()).updatedAt(product.getUpdatedAt()).build();
+		// Use the existing fromEntity method which handles brand and category mapping
+		ProductResponse response = ProductResponse.fromEntity(product);
+		
+		// Override imageUrls with the product-specific images
+		response.setImageUrls(productImageUrls);
+
+		return response;
 	}
 
 	private ProductVariantResponse mapToVariantResponse(ProductVariant variant) {
-		return ProductVariantResponse.builder().id(variant.getId()).sku(variant.getSku())
-				.attributes(variant.getAttributes()).price(variant.getPrice()).stock(variant.getStock())
-				.createdAt(variant.getCreatedAt()).updatedAt(variant.getUpdatedAt()).build();
+		// Get variant-specific images
+		List<String> variantImageUrls = productImageRepository.findByVariantId(variant.getId())
+				.stream()
+				.map(ProductImage::getImageUrl)
+				.collect(Collectors.toList());
+
+		return ProductVariantResponse.builder()
+				.id(variant.getId())
+				.sku(variant.getSku())
+				.attributes(variant.getAttributes())
+				.price(variant.getPrice())
+				.stock(variant.getStock())
+				.imageUrls(variantImageUrls)
+				.createdAt(variant.getCreatedAt())
+				.updatedAt(variant.getUpdatedAt())
+				.build();
 	}
 
 	private LowStockResponse mapToLowStockResponse(ProductVariant variant) {

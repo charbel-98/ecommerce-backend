@@ -1,6 +1,5 @@
 package com.charbel.ecommerce.product.dto;
 
-import com.charbel.ecommerce.brand.dto.BrandResponse;
 import com.charbel.ecommerce.category.dto.CategoryResponse;
 import com.charbel.ecommerce.common.enums.GenderType;
 import com.charbel.ecommerce.product.entity.Product;
@@ -26,11 +25,13 @@ public class ProductResponse {
 	private String name;
 	private String description;
 	private Integer basePrice;
-	private BrandResponse brand;
+	private UUID brandId;
+	private String brandName;
 	private CategoryResponse category;
 	private GenderType gender;
 	private ProductStatus status;
 	private Map<String, Object> metadata;
+	private List<String> imageUrls;
 	private List<ProductVariantResponse> variants;
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
@@ -38,7 +39,8 @@ public class ProductResponse {
 	public static ProductResponse fromEntity(Product product) {
 		return ProductResponse.builder().id(product.getId()).name(product.getName())
 				.description(product.getDescription()).basePrice(product.getBasePrice())
-				.brand(product.getBrand() != null ? BrandResponse.fromEntity(product.getBrand()) : null)
+				.brandId(product.getBrandId())
+				.brandName(product.getBrand() != null ? product.getBrand().getName() : null)
 				.category(product.getCategory() != null ? CategoryResponse.fromEntity(product.getCategory()) : null)
 				.gender(product.getGender()).status(product.getStatus()).metadata(product.getMetadata())
 				.variants(product.getVariants() != null
