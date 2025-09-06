@@ -6,6 +6,7 @@ import com.charbel.ecommerce.category.dto.CreateCategoryRequest;
 import com.charbel.ecommerce.category.dto.PaginatedCategoriesResponse;
 import com.charbel.ecommerce.category.entity.Category;
 import com.charbel.ecommerce.category.repository.CategoryRepository;
+import com.charbel.ecommerce.cdn.service.CdnService;
 import com.charbel.ecommerce.product.dto.ProductResponse;
 import com.charbel.ecommerce.product.entity.Product;
 import com.charbel.ecommerce.product.repository.ProductRepository;
@@ -17,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -28,11 +30,33 @@ public class CategoryService {
 
 	private final CategoryRepository categoryRepository;
 	private final ProductRepository productRepository;
+	private final CdnService cdnService;
 
 	@Transactional
 	public CategoryResponse createCategory(CreateCategoryRequest request) {
 		log.info("Creating new category: {}", request.getName());
 
+		// Validate that parentId exists (now required)
+		Category parentCategory = categoryRepository.findById(request.getParentId())
+				.orElseThrow(() -> new IllegalArgumentException(
+						"Parent category with ID '" + request.getParentId() + "' not found"));
+
+		// Calculate the new category level
+		Integer level = parentCategory.getLevel() + 1;
+
+		// Validate category levels - only allow levels 1 and 2
+		if (level > 2) {
+			throw new IllegalArgumentException(
+					"Cannot create category at level " + level + ". Maximum allowed level is 2");
+		}
+
+		// Prevent creating level 0 categories (though this is already prevented by requiring parentId)
+		if (level == 0) {
+			throw new IllegalArgumentException(
+					"Cannot create root level (level 0) categories. Root categories are pre-loaded in the database");
+		}
+
+		// Validate name and slug uniqueness
 		if (categoryRepository.existsByName(request.getName())) {
 			throw new IllegalArgumentException("Category with name '" + request.getName() + "' already exists");
 		}
@@ -41,20 +65,31 @@ public class CategoryService {
 			throw new IllegalArgumentException("Category with slug '" + request.getSlug() + "' already exists");
 		}
 
-		Integer level = 0;
-		if (request.getParentId() != null) {
-			Category parentCategory = categoryRepository.findById(request.getParentId())
-					.orElseThrow(() -> new IllegalArgumentException(
-							"Parent category with ID '" + request.getParentId() + "' not found"));
-			level = parentCategory.getLevel() + 1;
+		// Handle image upload if provided
+		String imageUrl = null;
+		if (request.getImage() != null && !request.getImage().isEmpty()) {
+			try {
+				imageUrl = cdnService.uploadImage(request.getImage(), "categories");
+				log.info("Category image uploaded successfully: {}", imageUrl);
+			} catch (IOException e) {
+				log.error("Failed to upload category image", e);
+				throw new RuntimeException("Failed to upload category image: " + e.getMessage(), e);
+			}
 		}
 
-		Category category = Category.builder().name(request.getName()).slug(request.getSlug())
-				.description(request.getDescription()).parentId(request.getParentId()).level(level)
-				.sortOrder(request.getSortOrder()).isActive(true).build();
+		Category category = Category.builder()
+				.name(request.getName())
+				.slug(request.getSlug())
+				.description(request.getDescription())
+				.imageUrl(imageUrl)
+				.parentId(request.getParentId())
+				.level(level)
+				.sortOrder(request.getSortOrder())
+				.isActive(true)
+				.build();
 
 		Category savedCategory = categoryRepository.save(category);
-		log.info("Category created successfully with ID: {}", savedCategory.getId());
+		log.info("Category created successfully with ID: {}, level: {}", savedCategory.getId(), savedCategory.getLevel());
 
 		return mapToCategoryResponse(savedCategory);
 	}
@@ -126,9 +161,9 @@ public class CategoryService {
 
 	private CategoryResponse mapToCategoryResponse(Category category) {
 		return CategoryResponse.builder().id(category.getId()).name(category.getName()).slug(category.getSlug())
-				.description(category.getDescription()).parentId(category.getParentId()).level(category.getLevel())
-				.sortOrder(category.getSortOrder()).isActive(category.getIsActive()).createdAt(category.getCreatedAt())
-				.updatedAt(category.getUpdatedAt()).build();
+				.description(category.getDescription()).imageUrl(category.getImageUrl()).parentId(category.getParentId())
+				.level(category.getLevel()).sortOrder(category.getSortOrder()).isActive(category.getIsActive())
+				.createdAt(category.getCreatedAt()).updatedAt(category.getUpdatedAt()).build();
 	}
 
 	private CategoryWithProductsResponse mapToCategoryWithProducts(Category category) {
@@ -145,6 +180,7 @@ public class CategoryService {
 				.name(category.getName())
 				.slug(category.getSlug())
 				.description(category.getDescription())
+				.imageUrl(category.getImageUrl())
 				.parentId(category.getParentId())
 				.level(category.getLevel())
 				.sortOrder(category.getSortOrder())

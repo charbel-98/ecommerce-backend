@@ -21,6 +21,7 @@ public class CategoryResponse {
 	private String name;
 	private String slug;
 	private String description;
+	private String imageUrl;
 	private UUID parentId;
 	private Integer level;
 	private Integer sortOrder;
@@ -35,9 +36,9 @@ public class CategoryResponse {
 
 	public static CategoryResponse fromEntity(Category category, boolean includeChildren) {
 		CategoryResponse response = CategoryResponse.builder().id(category.getId()).name(category.getName())
-				.slug(category.getSlug()).description(category.getDescription()).parentId(category.getParentId())
-				.level(category.getLevel()).sortOrder(category.getSortOrder()).isActive(category.getIsActive())
-				.createdAt(category.getCreatedAt()).updatedAt(category.getUpdatedAt()).build();
+				.slug(category.getSlug()).description(category.getDescription()).imageUrl(category.getImageUrl())
+				.parentId(category.getParentId()).level(category.getLevel()).sortOrder(category.getSortOrder())
+				.isActive(category.getIsActive()).createdAt(category.getCreatedAt()).updatedAt(category.getUpdatedAt()).build();
 
 		if (includeChildren && category.getChildren() != null) {
 			response.setChildren(category.getChildren().stream().map(child -> CategoryResponse.fromEntity(child, true))

@@ -33,6 +33,9 @@ public class Category {
 	@Column(columnDefinition = "TEXT")
 	private String description;
 
+	@Column(name = "image_url")
+	private String imageUrl;
+
 	@Column(name = "parent_id")
 	private UUID parentId;
 

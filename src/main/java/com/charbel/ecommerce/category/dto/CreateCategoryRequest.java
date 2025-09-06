@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -20,9 +21,12 @@ public class CreateCategoryRequest {
 
 	private String description;
 
+	@NotNull(message = "Parent ID is required")
 	private UUID parentId;
 
 	@NotNull(message = "Sort order is required")
 	@Min(value = 0, message = "Sort order must be non-negative")
 	private Integer sortOrder;
+
+	private MultipartFile image;
 }

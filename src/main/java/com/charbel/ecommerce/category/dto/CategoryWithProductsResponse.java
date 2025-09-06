@@ -20,6 +20,7 @@ public class CategoryWithProductsResponse {
 	private String name;
 	private String slug;
 	private String description;
+	private String imageUrl;
 	private UUID parentId;
 	private Integer level;
 	private Integer sortOrder;
