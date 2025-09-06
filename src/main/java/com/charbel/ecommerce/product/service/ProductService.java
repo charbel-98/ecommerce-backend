@@ -3,6 +3,8 @@ package com.charbel.ecommerce.product.service;
 import com.charbel.ecommerce.ai.service.ColorVariantImageService;
 import com.charbel.ecommerce.category.service.CategoryService;
 import com.charbel.ecommerce.common.enums.GenderType;
+import com.charbel.ecommerce.event.entity.Discount;
+import com.charbel.ecommerce.event.entity.Event;
 import com.charbel.ecommerce.product.dto.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -288,6 +291,9 @@ public class ProductService {
 		// Override imageUrls with the product-specific images
 		response.setImageUrls(productImageUrls);
 
+		// Get active discount information
+		response.setDiscount(getActiveDiscountForProduct(product.getId()));
+
 		return response;
 	}
 
@@ -351,5 +357,36 @@ public class ProductService {
 
 		Page<Product> products = productRepository.findProductsByCategoryId(categoryId, pageable);
 		return products.map(this::mapToProductResponse);
+	}
+
+	private DiscountInfo getActiveDiscountForProduct(UUID productId) {
+		LocalDateTime now = LocalDateTime.now();
+		List<Event> activeEvents = productRepository.findActiveEventsWithDiscountsForProduct(productId, now);
+
+		if (activeEvents.isEmpty()) {
+			return null;
+		}
+
+		// Return the first active event with discounts (you might want to prioritize by discount value)
+		Event event = activeEvents.get(0);
+		Discount discount = event.getDiscounts().stream()
+			.findFirst()
+			.orElse(null);
+
+		if (discount == null) {
+			return null;
+		}
+
+		return DiscountInfo.builder()
+			.eventId(event.getId())
+			.eventName(event.getName())
+			.discountId(discount.getId())
+			.type(discount.getType())
+			.value(discount.getValue())
+			.minPurchaseAmount(discount.getMinPurchaseAmount())
+			.maxDiscountAmount(discount.getMaxDiscountAmount())
+			.eventStartDate(event.getStartDate())
+			.eventEndDate(event.getEndDate())
+			.build();
 	}
 }

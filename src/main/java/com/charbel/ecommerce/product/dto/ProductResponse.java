@@ -33,6 +33,7 @@ public class ProductResponse {
 	private Map<String, Object> metadata;
 	private List<String> imageUrls;
 	private List<ProductVariantResponse> variants;
+	private DiscountInfo discount;
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
 
