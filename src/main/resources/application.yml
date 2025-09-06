@@ -47,10 +47,10 @@ r2:
 gemini:
   api:
     key: ${GEMINI_API_KEY}
-    url: ${GEMINI_API_URL:https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent}
+    url: ${GEMINI_API_URL:https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent}
   max:
     retries: ${GEMINI_MAX_RETRIES:3}
-  timeout: ${GEMINI_TIMEOUT:30000}
+  timeout: ${GEMINI_TIMEOUT:60000}
 
 
 ---

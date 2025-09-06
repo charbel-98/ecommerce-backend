@@ -47,6 +47,9 @@ public class ProductService {
 		log.info("Creating new product with AI variants: {}", request.getName());
 		
 		try {
+			// VALIDATE FIRST - before any expensive operations
+			validateProductRequest(request);
+			
 			// Extract unique colors from variants
 			List<String> uniqueColors = extractUniqueColorsFromVariants(request.getVariants());
 			
@@ -106,7 +109,7 @@ public class ProductService {
 		}
 	}
 	
-	private ProductResponse createProductWithGeneratedImages(CreateProductRequest request, Map<String, String> variantImageUrls) {
+	private void validateProductRequest(CreateProductRequest request) {
 		// Validate SKU uniqueness for all variants
 		Set<String> requestedSkus = request.getVariants().stream().map(ProductVariantRequest::getSku)
 				.collect(Collectors.toSet());
@@ -123,6 +126,9 @@ public class ProductService {
 		if (request.getCategoryId() != null) {
 			categoryService.validateLeafCategory(request.getCategoryId());
 		}
+	}
+	
+	private ProductResponse createProductWithGeneratedImages(CreateProductRequest request, Map<String, String> variantImageUrls) {
 
 		// Create the product
 		Product product = Product.builder()

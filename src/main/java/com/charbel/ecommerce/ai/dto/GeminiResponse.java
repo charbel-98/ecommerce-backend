@@ -1,5 +1,6 @@
 package com.charbel.ecommerce.ai.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -31,12 +32,14 @@ public class GeminiResponse {
     @NoArgsConstructor
     public static class Part {
         private String text;
+        @JsonProperty("inlineData")
         private InlineData inline_data;
     }
 
     @Data
     @NoArgsConstructor
     public static class InlineData {
+        @JsonProperty("mimeType")
         private String mime_type;
         private String data; // base64 encoded image
         private String identifier; // Custom identifier for variant tracking
