@@ -41,6 +41,11 @@ public class EventService {
 			throw new IllegalArgumentException("Event with name '" + event.getName() + "' already exists");
 		}
 
+		// Validate discount constraint - only one event with discount can be active at a time
+		if (discounts != null && !discounts.isEmpty()) {
+			validateDiscountConflict(event.getStartDate(), event.getEndDate());
+		}
+
 		// Upload image to CDN
 		String imageUrl = cdnService.uploadImage(imageFile, "events");
 		event.setImageUrl(imageUrl);
@@ -64,13 +69,23 @@ public class EventService {
 
 	@Transactional
 	public Event updateEvent(UUID eventId, Event updatedEvent, List<Discount> discounts, MultipartFile imageFile) throws IOException {
-		Event existingEvent = eventRepository.findById(eventId)
+		Event existingEvent = eventRepository.findByIdWithDiscounts(eventId)
 				.orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
 
 		// Check name uniqueness if name is being changed
 		if (!existingEvent.getName().equals(updatedEvent.getName())
 				&& eventRepository.existsByName(updatedEvent.getName())) {
 			throw new IllegalArgumentException("Event with name '" + updatedEvent.getName() + "' already exists");
+		}
+
+		// Check if event has existing discounts and dates are changing
+		boolean hasExistingDiscounts = existingEvent.getDiscounts() != null && !existingEvent.getDiscounts().isEmpty();
+		boolean datesChanged = !existingEvent.getStartDate().equals(updatedEvent.getStartDate()) ||
+							   !existingEvent.getEndDate().equals(updatedEvent.getEndDate());
+
+		// Validate discount conflict if event has discounts and dates are changing
+		if (hasExistingDiscounts && datesChanged) {
+			validateDiscountConflictForUpdate(eventId, updatedEvent.getStartDate(), updatedEvent.getEndDate());
 		}
 
 		// Update basic fields
@@ -95,6 +110,11 @@ public class EventService {
 
 		// Update discounts
 		if (discounts != null) {
+			// Validate discount constraint if adding discounts
+			if (!discounts.isEmpty()) {
+				validateDiscountConflictForUpdate(eventId, updatedEvent.getStartDate(), updatedEvent.getEndDate());
+			}
+			
 			// Delete existing discounts
 			discountRepository.deleteByEventId(eventId);
 			// Create new discounts
@@ -192,5 +212,17 @@ public class EventService {
 			throw new EntityNotFoundException("Event not found with id: " + eventId);
 		}
 		return discountRepository.findByEventId(eventId);
+	}
+
+	private void validateDiscountConflict(LocalDateTime startDate, LocalDateTime endDate) {
+		if (eventRepository.existsActiveEventWithDiscountInDateRange(startDate, endDate)) {
+			throw new IllegalArgumentException("Cannot create event with discount. Another active event with discount already exists in the specified time period");
+		}
+	}
+
+	private void validateDiscountConflictForUpdate(UUID eventId, LocalDateTime startDate, LocalDateTime endDate) {
+		if (eventRepository.existsActiveEventWithDiscountInDateRangeExcludingEvent(eventId, startDate, endDate)) {
+			throw new IllegalArgumentException("Cannot update event with discount. Another active event with discount already exists in the specified time period");
+		}
 	}
 }

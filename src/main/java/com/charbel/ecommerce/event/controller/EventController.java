@@ -12,15 +12,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.charbel.ecommerce.event.dto.AddProductsToEventRequest;
 import com.charbel.ecommerce.event.dto.AdminEventResponse;
@@ -51,16 +50,14 @@ public class EventController {
 
 	private final EventService eventService;
 
-	@PostMapping(value = "/admin/events", consumes = {"multipart/form-data"})
+	@PostMapping(value = "/admin/events", consumes = { "multipart/form-data" })
 	@PreAuthorize("hasRole('ADMIN')")
 	@Operation(summary = "Create a new event", description = "Creates a new event with image file upload and optional discounts")
-	public ResponseEntity<EventResponse> createEvent(
-			@RequestPart("event") @Valid CreateEventRequest request,
-			@RequestPart("image") MultipartFile imageFile) {
+	public ResponseEntity<EventResponse> createEvent(@Valid @ModelAttribute CreateEventRequest request) {
 
 		try {
 			// Validate image file
-			if (imageFile == null || imageFile.isEmpty()) {
+			if (request.getImage() == null || request.getImage().isEmpty()) {
 				throw new IllegalArgumentException("Image file is required");
 			}
 
@@ -71,7 +68,7 @@ public class EventController {
 				discounts = request.getDiscounts().stream().map(DiscountRequest::toEntity).collect(Collectors.toList());
 			}
 
-			Event createdEvent = eventService.createEvent(event, discounts, imageFile);
+			Event createdEvent = eventService.createEvent(event, discounts, request.getImage());
 			EventResponse response = EventResponse.fromEntity(createdEvent);
 
 			return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -85,12 +82,11 @@ public class EventController {
 		}
 	}
 
-	@PutMapping(value = "/admin/events/{id}", consumes = {"multipart/form-data"})
+	@PutMapping(value = "/admin/events/{id}", consumes = { "multipart/form-data" })
 	@PreAuthorize("hasRole('ADMIN')")
 	@Operation(summary = "Update an event", description = "Updates an existing event with optional image file upload and discounts")
 	public ResponseEntity<EventResponse> updateEvent(@PathVariable UUID id,
-			@RequestPart("event") @Valid UpdateEventRequest request,
-			@RequestPart(value = "image", required = false) MultipartFile imageFile) {
+			@Valid @ModelAttribute UpdateEventRequest request) {
 
 		try {
 			Event event = request.toEntity(null); // imageUrl will be handled in service
@@ -100,7 +96,7 @@ public class EventController {
 				discounts = request.getDiscounts().stream().map(DiscountRequest::toEntity).collect(Collectors.toList());
 			}
 
-			Event updatedEvent = eventService.updateEvent(id, event, discounts, imageFile);
+			Event updatedEvent = eventService.updateEvent(id, event, discounts, request.getImage());
 			EventResponse response = EventResponse.fromEntity(updatedEvent);
 
 			return ResponseEntity.ok(response);

@@ -35,4 +35,20 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
 	Page<Event> findAllWithDiscountsAndProducts(Pageable pageable);
 
 	boolean existsByName(String name);
+
+	@Query("SELECT COUNT(e) > 0 FROM Event e " +
+		   "WHERE e.discounts IS NOT EMPTY " +
+		   "AND e.status != 'INACTIVE' " +
+		   "AND ((e.startDate <= :endDate AND e.endDate >= :startDate))")
+	boolean existsActiveEventWithDiscountInDateRange(@Param("startDate") LocalDateTime startDate, 
+													@Param("endDate") LocalDateTime endDate);
+
+	@Query("SELECT COUNT(e) > 0 FROM Event e " +
+		   "WHERE e.id != :eventId " +
+		   "AND e.discounts IS NOT EMPTY " +
+		   "AND e.status != 'INACTIVE' " +
+		   "AND ((e.startDate <= :endDate AND e.endDate >= :startDate))")
+	boolean existsActiveEventWithDiscountInDateRangeExcludingEvent(@Param("eventId") UUID eventId,
+																   @Param("startDate") LocalDateTime startDate,
+																   @Param("endDate") LocalDateTime endDate);
 }
