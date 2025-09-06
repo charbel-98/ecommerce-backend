@@ -1,5 +1,16 @@
 package com.charbel.ecommerce.event.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.charbel.ecommerce.event.entity.Discount;
 import com.charbel.ecommerce.event.entity.Event;
 import com.charbel.ecommerce.event.repository.DiscountRepository;
@@ -7,19 +18,10 @@ import com.charbel.ecommerce.event.repository.EventRepository;
 import com.charbel.ecommerce.product.entity.Product;
 import com.charbel.ecommerce.product.repository.ProductRepository;
 import com.charbel.ecommerce.service.CloudflareR2Service;
+
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -145,8 +147,8 @@ public class EventService {
 		return eventRepository.findAll(pageable);
 	}
 
-	public Page<Event> getActiveEvents(Pageable pageable) {
-		return eventRepository.findByStatusOrderByStartDateDesc(Event.EventStatus.ACTIVE, pageable);
+	public List<Event> getActiveEvents() {
+		return eventRepository.findByStatusOrderByStartDateDesc(Event.EventStatus.ACTIVE);
 	}
 
 	public List<Event> getCurrentlyRunningEvents() {

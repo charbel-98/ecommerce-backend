@@ -189,6 +189,12 @@ public class ProductService {
 		return products.map(this::mapToProductResponse);
 	}
 
+	public Page<ProductResponse> getProductsByEventId(UUID eventId, Pageable pageable) {
+		log.info("Fetching products for event ID: {}", eventId);
+		Page<Product> products = productRepository.findProductsByEventId(eventId, pageable);
+		return products.map(this::mapToProductResponse);
+	}
+
 	@Transactional
 	public ProductResponse disableProduct(UUID productId) {
 		log.info("Disabling product with ID: {}", productId);

@@ -5,6 +5,10 @@ import com.charbel.ecommerce.brand.repository.BrandRepository;
 import com.charbel.ecommerce.category.entity.Category;
 import com.charbel.ecommerce.category.repository.CategoryRepository;
 import com.charbel.ecommerce.common.enums.GenderType;
+import com.charbel.ecommerce.event.entity.Discount;
+import com.charbel.ecommerce.event.entity.Event;
+import com.charbel.ecommerce.event.repository.DiscountRepository;
+import com.charbel.ecommerce.event.repository.EventRepository;
 import com.charbel.ecommerce.product.entity.Product;
 import com.charbel.ecommerce.product.entity.ProductVariant;
 import com.charbel.ecommerce.product.repository.ProductRepository;
@@ -18,9 +22,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -32,6 +36,8 @@ public class DataSeeder implements CommandLineRunner {
 	private final CategoryRepository categoryRepository;
 	private final ProductRepository productRepository;
 	private final ProductVariantRepository productVariantRepository;
+	private final EventRepository eventRepository;
+	private final DiscountRepository discountRepository;
 	private final PasswordEncoder passwordEncoder;
 
 	@Override
@@ -41,6 +47,8 @@ public class DataSeeder implements CommandLineRunner {
 		seedBrands();
 		seedCategories();
 		seedProducts();
+		seedEvents();
+		seedEventProductLinks();
 	}
 
 	private void seedAdminUser() {
@@ -467,5 +475,126 @@ public class DataSeeder implements CommandLineRunner {
 			.price(price)
 			.stock(stock)
 			.build();
+	}
+
+	private void seedEvents() {
+		if (eventRepository.count() > 0) {
+			log.info("Events already exist, skipping event seeding");
+			return;
+		}
+
+		LocalDateTime now = LocalDateTime.now();
+		LocalDateTime futureDate = now.plusMonths(3);
+		LocalDateTime pastDate = now.minusMonths(1);
+
+		// Event 1: Fashion Sale (with discount)
+		Event fashionSaleEvent = Event.builder()
+			.name("Fashion\nsale")
+			.description("Get amazing discounts on our fashion collection")
+			.imageUrl("https://images.unsplash.com/photo-1445205170230-053b83016050?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80")
+			.startDate(pastDate)
+			.endDate(futureDate)
+			.status(Event.EventStatus.ACTIVE)
+			.build();
+
+		eventRepository.save(fashionSaleEvent);
+
+		// Create discount for Fashion Sale
+		Discount fashionSaleDiscount = Discount.builder()
+			.eventId(fashionSaleEvent.getId())
+			.type(Discount.DiscountType.PERCENTAGE)
+			.value(25) // 25% off
+			.minPurchaseAmount(5000) // $50 minimum
+			.maxDiscountAmount(5000) // Max $50 discount
+			.build();
+
+		discountRepository.save(fashionSaleDiscount);
+
+		// Event 2: Summer Collection
+		Event summerCollectionEvent = Event.builder()
+			.name("Summer\nCollection")
+			.description("Discover our latest summer styles and trending looks")
+			.imageUrl("https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80")
+			.startDate(now.minusWeeks(2))
+			.endDate(futureDate.plusWeeks(4))
+			.status(Event.EventStatus.ACTIVE)
+			.build();
+
+		eventRepository.save(summerCollectionEvent);
+
+		// Event 3: Winter is Coming
+		Event winterEvent = Event.builder()
+			.name("Winter\nis Coming")
+			.description("Prepare for winter with our cozy collection of warm clothing")
+			.imageUrl("https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80")
+			.startDate(now.plusMonths(2))
+			.endDate(futureDate.plusMonths(2))
+			.status(Event.EventStatus.SCHEDULED)
+			.build();
+
+		eventRepository.save(winterEvent);
+
+		log.info("Seeded 3 events with carousel data");
+	}
+
+	private void seedEventProductLinks() {
+		if (eventRepository.count() == 0 || productRepository.count() == 0) {
+			log.info("No events or products found, skipping event-product linking");
+			return;
+		}
+
+		// Get all events and products
+		List<Event> events = eventRepository.findAll();
+		List<Product> products = productRepository.findAll();
+
+		// Fashion Sale Event - Link to Zara Dress and H&M Jeans (fashion items)
+		Event fashionSaleEvent = events.stream()
+			.filter(e -> e.getName().contains("Fashion"))
+			.findFirst()
+			.orElse(null);
+
+		if (fashionSaleEvent != null) {
+			Set<Product> fashionProducts = products.stream()
+				.filter(p -> p.getName().contains("Zara") || p.getName().contains("H&M"))
+				.collect(Collectors.toSet());
+			
+			fashionSaleEvent.setProducts(fashionProducts);
+			eventRepository.save(fashionSaleEvent);
+			log.info("Linked {} products to Fashion Sale event", fashionProducts.size());
+		}
+
+		// Summer Collection Event - Link to Nike T-Shirt and Zara Dress (summer items)
+		Event summerEvent = events.stream()
+			.filter(e -> e.getName().contains("Summer"))
+			.findFirst()
+			.orElse(null);
+
+		if (summerEvent != null) {
+			Set<Product> summerProducts = products.stream()
+				.filter(p -> p.getName().contains("T-Shirt") || p.getName().contains("Dress"))
+				.collect(Collectors.toSet());
+			
+			summerEvent.setProducts(summerProducts);
+			eventRepository.save(summerEvent);
+			log.info("Linked {} products to Summer Collection event", summerProducts.size());
+		}
+
+		// Winter Event - Link to all Jeans and Sneakers (layering pieces)
+		Event winterEvent = events.stream()
+			.filter(e -> e.getName().contains("Winter"))
+			.findFirst()
+			.orElse(null);
+
+		if (winterEvent != null) {
+			Set<Product> winterProducts = products.stream()
+				.filter(p -> p.getName().contains("Jeans") || p.getName().contains("Air Max"))
+				.collect(Collectors.toSet());
+			
+			winterEvent.setProducts(winterProducts);
+			eventRepository.save(winterEvent);
+			log.info("Linked {} products to Winter event", winterProducts.size());
+		}
+
+		log.info("Successfully linked products to events");
 	}
 }

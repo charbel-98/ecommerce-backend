@@ -5,10 +5,7 @@ import com.charbel.ecommerce.category.entity.Category;
 import com.charbel.ecommerce.common.enums.GenderType;
 import com.charbel.ecommerce.event.entity.Event;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -22,10 +19,12 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "products")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(exclude = {"variants", "events"})
 public class Product {
 
 	@Id

@@ -1,15 +1,9 @@
 package com.charbel.ecommerce.event.controller;
 
-import com.charbel.ecommerce.event.dto.*;
-import com.charbel.ecommerce.event.entity.Discount;
-import com.charbel.ecommerce.event.entity.Event;
-import com.charbel.ecommerce.event.service.EventService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,12 +11,34 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import com.charbel.ecommerce.event.dto.AddProductsToEventRequest;
+import com.charbel.ecommerce.event.dto.CreateEventRequest;
+import com.charbel.ecommerce.event.dto.DiscountRequest;
+import com.charbel.ecommerce.event.dto.DiscountResponse;
+import com.charbel.ecommerce.event.dto.EventResponse;
+import com.charbel.ecommerce.event.dto.UpdateEventRequest;
+import com.charbel.ecommerce.event.entity.Discount;
+import com.charbel.ecommerce.event.entity.Event;
+import com.charbel.ecommerce.event.service.EventService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api")
@@ -107,10 +123,10 @@ public class EventController {
 	}
 
 	@GetMapping("/events/{id}")
-	@Operation(summary = "Get event by ID", description = "Retrieves detailed event information including discounts and products")
+	@Operation(summary = "Get event by ID", description = "Retrieves detailed event information including discounts")
 	public ResponseEntity<EventResponse> getEventById(@PathVariable UUID id) {
 		Event event = eventService.getEventById(id);
-		EventResponse response = EventResponse.fromEntity(event);
+		EventResponse response = EventResponse.fromEntityWithDiscounts(event);
 		return ResponseEntity.ok(response);
 	}
 
@@ -127,14 +143,13 @@ public class EventController {
 	}
 
 	@GetMapping("/events/active")
-	@Operation(summary = "Get active events", description = "Retrieves paginated list of active events")
-	public ResponseEntity<Page<EventResponse>> getActiveEvents(
-			@RequestParam(defaultValue = "0") @Parameter(description = "Page number") int page,
-			@RequestParam(defaultValue = "20") @Parameter(description = "Page size") int size) {
+	@Operation(summary = "Get active events", description = "Retrieves list of active events")
+	public ResponseEntity<List<EventResponse>> getActiveEvents() {
 
-		Pageable pageable = PageRequest.of(page, size);
-		Page<Event> events = eventService.getActiveEvents(pageable);
-		Page<EventResponse> response = events.map(EventResponse::fromEntityBasic);
+		List<Event> events = eventService.getActiveEvents();
+		List<EventResponse> response = events.stream()
+				.map(EventResponse::fromEntityBasic)
+				.collect(Collectors.toList());
 		return ResponseEntity.ok(response);
 	}
 

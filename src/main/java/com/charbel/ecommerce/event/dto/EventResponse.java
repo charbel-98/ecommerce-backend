@@ -3,6 +3,7 @@ package com.charbel.ecommerce.event.dto;
 import com.charbel.ecommerce.event.entity.Event;
 import com.charbel.ecommerce.product.dto.ProductResponse;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Data;
 
@@ -29,7 +30,11 @@ public class EventResponse {
 
 	private Event.EventStatus status;
 	private boolean isCurrentlyActive;
+	
+	@JsonInclude(JsonInclude.Include.NON_NULL)
 	private List<DiscountResponse> discounts;
+	
+	@JsonInclude(JsonInclude.Include.NON_NULL)
 	private Set<ProductResponse> products;
 
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -56,5 +61,15 @@ public class EventResponse {
 				.imageUrl(event.getImageUrl()).startDate(event.getStartDate()).endDate(event.getEndDate())
 				.status(event.getStatus()).isCurrentlyActive(event.isActive()).createdAt(event.getCreatedAt())
 				.updatedAt(event.getUpdatedAt()).build();
+	}
+
+	public static EventResponse fromEntityWithDiscounts(Event event) {
+		return EventResponse.builder().id(event.getId()).name(event.getName()).description(event.getDescription())
+				.imageUrl(event.getImageUrl()).startDate(event.getStartDate()).endDate(event.getEndDate())
+				.status(event.getStatus()).isCurrentlyActive(event.isActive())
+				.discounts(event.getDiscounts() != null
+						? event.getDiscounts().stream().map(DiscountResponse::fromEntity).collect(Collectors.toList())
+						: null)
+				.createdAt(event.getCreatedAt()).updatedAt(event.getUpdatedAt()).build();
 	}
 }
