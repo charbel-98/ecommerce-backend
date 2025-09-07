@@ -17,6 +17,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -62,13 +63,13 @@ class ProductControllerIntegrationTest {
 		ProductVariantRequest variantRequest = new ProductVariantRequest();
 		variantRequest.setSku("TEST-001");
 		variantRequest.setAttributes(Map.of("size", "M", "color", "Red"));
-		variantRequest.setPrice(2999);
+		variantRequest.setPrice(new BigDecimal("29.99"));
 		variantRequest.setStock(10);
 
 		CreateProductRequest request = new CreateProductRequest();
 		request.setName("Test Product");
 		request.setDescription("Test Description");
-		request.setBasePrice(2999);
+		request.setBasePrice(new BigDecimal("29.99"));
 		request.setVariants(List.of(variantRequest));
 
 		mockMvc.perform(post("/products").header("Authorization", adminToken).contentType(MediaType.APPLICATION_JSON)
@@ -86,12 +87,12 @@ class ProductControllerIntegrationTest {
 		ProductVariantRequest variantRequest = new ProductVariantRequest();
 		variantRequest.setSku("TEST-001");
 		variantRequest.setAttributes(Map.of("size", "M"));
-		variantRequest.setPrice(2999);
+		variantRequest.setPrice(new BigDecimal("29.99"));
 		variantRequest.setStock(10);
 
 		CreateProductRequest request = new CreateProductRequest();
 		request.setName("Test Product");
-		request.setBasePrice(2999);
+		request.setBasePrice(new BigDecimal("29.99"));
 		request.setVariants(List.of(variantRequest));
 
 		mockMvc.perform(post("/products").contentType(MediaType.APPLICATION_JSON)

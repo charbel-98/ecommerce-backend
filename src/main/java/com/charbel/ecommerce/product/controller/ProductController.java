@@ -27,7 +27,9 @@ import com.charbel.ecommerce.product.dto.AddStockResponse;
 import com.charbel.ecommerce.product.dto.LowStockResponse;
 import com.charbel.ecommerce.product.dto.ProductFilterRequest;
 import com.charbel.ecommerce.product.dto.ProductResponse;
+import com.charbel.ecommerce.product.dto.SimilarProductResponse;
 import com.charbel.ecommerce.product.service.ProductService;
+import com.charbel.ecommerce.product.service.ProductSimilarityService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -44,6 +46,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ProductController {
 
 	private final ProductService productService;
+	private final ProductSimilarityService productSimilarityService;
 
 	// Admin endpoints
 	@PostMapping(value = "/admin/products", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -159,6 +162,22 @@ public class ProductController {
 		
 		Page<ProductResponse> response = productService.getFilteredProductsByCategoryId(categoryId, sortType, filterRequest, pageable);
 		return ResponseEntity.ok(response);
+	}
+
+	@GetMapping("/products/{productId}/similar")
+	@Operation(summary = "Get similar products", description = "Returns a list of products similar to the specified product based on metadata and attributes")
+	public ResponseEntity<List<SimilarProductResponse>> getSimilarProducts(
+			@PathVariable UUID productId,
+			@RequestParam(defaultValue = "10") int limit) {
+		log.info("Fetching similar products for product ID: {} with limit: {}", productId, limit);
+		
+		try {
+			List<SimilarProductResponse> similarProducts = productSimilarityService.findSimilarProducts(productId, limit);
+			return ResponseEntity.ok(similarProducts);
+		} catch (RuntimeException e) {
+			log.error("Error fetching similar products for product ID: {}", productId, e);
+			return ResponseEntity.badRequest().build();
+		}
 	}
 
 }

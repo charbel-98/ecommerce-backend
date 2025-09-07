@@ -113,4 +113,8 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 														   @Param("brandSlugs") List<String> brandSlugs,
 														   @Param("sortType") String sortType,
 														   Pageable pageable);
+
+	@Query("SELECT p FROM Product p LEFT JOIN FETCH p.variants LEFT JOIN FETCH p.brand LEFT JOIN FETCH p.category " +
+		   "WHERE p.status = :status AND p.id != :excludeId")
+	List<Product> findByStatusAndIdNot(@Param("status") Product.ProductStatus status, @Param("excludeId") UUID excludeId);
 }

@@ -5,9 +5,9 @@ import com.charbel.ecommerce.common.enums.GenderType;
 import com.charbel.ecommerce.product.entity.Product;
 import com.charbel.ecommerce.product.entity.Product.ProductStatus;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class ProductResponse {
 
 	private UUID id;
@@ -41,7 +41,7 @@ public class ProductResponse {
 	private LocalDateTime updatedAt;
 
 	public static ProductResponse fromEntity(Product product) {
-		return ProductResponse.builder().id(product.getId()).name(product.getName())
+		return ProductResponse.<ProductResponse>builder().id(product.getId()).name(product.getName())
 				.description(product.getDescription()).basePrice(product.getBasePrice()).brandId(product.getBrandId())
 				.brandName(product.getBrand() != null ? product.getBrand().getName() : null)
 				.category(product.getCategory() != null ? CategoryResponse.fromEntity(product.getCategory()) : null)

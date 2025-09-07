@@ -16,6 +16,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -52,13 +53,13 @@ class ProductControllerAdminIntegrationTest {
 		userRepository.save(adminUser);
 
 		// Create a low stock product variant for testing
-		Product product = Product.builder().name("Test Product").description("Test Description").basePrice(2999)
+		Product product = Product.builder().name("Test Product").description("Test Description").basePrice(new BigDecimal("29.99"))
 				.status(Product.ProductStatus.ACTIVE).build();
 
 		Product savedProduct = productRepository.save(product);
 
 		ProductVariant lowStockVariant = ProductVariant.builder().product(savedProduct).sku("LOW-STOCK-001")
-				.attributes(Map.of("size", "S", "color", "Blue")).price(2999).stock(3) // Low stock
+				.attributes(Map.of("size", "S", "color", "Blue")).price(new BigDecimal("29.99")).stock(3) // Low stock
 				.build();
 
 		productVariantRepository.save(lowStockVariant);

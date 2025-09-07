@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.UUID;
@@ -53,7 +54,7 @@ class EventServiceDiscountValidationTest {
 
         Discount discount = Discount.builder()
                 .type(Discount.DiscountType.PERCENTAGE)
-                .value(10)
+                .value(new BigDecimal("10.00"))
                 .build();
 
         when(eventRepository.existsByName("Test Event")).thenReturn(false);
@@ -80,7 +81,7 @@ class EventServiceDiscountValidationTest {
 
         Discount discount = Discount.builder()
                 .type(Discount.DiscountType.PERCENTAGE)
-                .value(10)
+                .value(new BigDecimal("10.00"))
                 .build();
 
         when(eventRepository.existsByName("Test Event")).thenReturn(false);
@@ -118,7 +119,7 @@ class EventServiceDiscountValidationTest {
 
         Discount discount = Discount.builder()
                 .type(Discount.DiscountType.PERCENTAGE)
-                .value(10)
+                .value(new BigDecimal("10.00"))
                 .build();
 
         when(eventRepository.findByIdWithDiscounts(eventId)).thenReturn(java.util.Optional.of(existingEvent));
