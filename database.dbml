@@ -28,6 +28,19 @@ Enum userRole {
   revokedAt datetime
 }
 
+ addresses {
+  id UUID [pk]
+  userId UUID [not null]
+  street varchar(255) [not null]
+  city varchar(100) [not null]
+  state varchar(100) [not null]
+  zipCode varchar(20) [not null]
+  country varchar(100) [not null]
+  isDefault boolean [not null, default: false]
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+}
+
 ////////////////////////////////////////////////////
 // PURPLE — Brands & Categories
  brands {
@@ -318,12 +331,13 @@ Enum discountType {
 // RELATIONSHIPS
 ////////////////////////////////////////////////////
 
-// Users → Carts, Orders, Reviews, Logs, Refresh Tokens
+// Users → Carts, Orders, Reviews, Logs, Refresh Tokens, Addresses
  carts.userId > users.id
  orders.userId > users.id
  reviews.userId > users.id
  audit_logs.userId > users.id
  refresh_tokens.userId > users.id
+ addresses.userId > users.id
 
 // Brands & Categories → Products
  products.brandId > brands.id
@@ -441,5 +455,13 @@ Table review_helpful_votes {
     reviewId [name: 'idx_review_helpful_votes_review']
     userId [name: 'idx_review_helpful_votes_user']
     (reviewId, userId) [name: 'idx_review_helpful_votes_unique', unique: true]
+  }
+}
+
+Table addresses {
+  indexes {
+    userId [name: 'idx_addresses_user']
+    isDefault [name: 'idx_addresses_default']
+    (userId, isDefault) [name: 'idx_addresses_user_default']
   }
 }
