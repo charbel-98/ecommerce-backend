@@ -12,6 +12,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +64,13 @@ public class Product {
 	@Column(nullable = false)
 	@Builder.Default
 	private ProductStatus status = ProductStatus.ACTIVE;
+
+	@Column(name = "average_rating", precision = 2, scale = 1)
+	private BigDecimal averageRating;
+
+	@Column(name = "review_count", nullable = false)
+	@Builder.Default
+	private Long reviewCount = 0L;
 
 	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(columnDefinition = "jsonb")

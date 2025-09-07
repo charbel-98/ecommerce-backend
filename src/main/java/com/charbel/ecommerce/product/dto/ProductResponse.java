@@ -50,6 +50,8 @@ public class ProductResponse {
 						? product.getVariants().stream().map(ProductVariantResponse::fromEntity)
 								.collect(Collectors.toList())
 						: null)
+				.reviewCount(product.getReviewCount())
+				.averageRating(product.getAverageRating())
 				.createdAt(product.getCreatedAt()).updatedAt(product.getUpdatedAt()).build();
 	}
 }

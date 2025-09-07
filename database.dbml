@@ -71,6 +71,8 @@ Enum brandStatus {
   categoryId UUID [not null] // foreign key to categories
   gender genderType [not null]
   status productStatus [not null, default: 'ACTIVE']
+  averageRating decimal(2,1) [default: null] // average rating 1.0-5.0
+  reviewCount int [not null, default: 0] // total number of reviews
   metadata jsonb // SEO, tags, special attributes
   createdAt datetime [not null]
   updatedAt datetime [not null]
@@ -348,7 +350,9 @@ Table products {
     categoryId [name: 'idx_products_category']
     gender [name: 'idx_products_gender']
     status [name: 'idx_products_status']
+    averageRating [name: 'idx_products_rating']
     (brandId, categoryId, gender) [name: 'idx_products_filter']
+    (averageRating, reviewCount) [name: 'idx_products_rating_filter']
   }
 }
 

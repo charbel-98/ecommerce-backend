@@ -24,6 +24,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -549,5 +551,32 @@ public class DataSeeder implements CommandLineRunner {
 
 		reviewRepository.saveAll(reviews);
 		log.info("Seeded {} reviews for user: {}", reviews.size(), reviewUser.getEmail());
+
+		// Update product rating statistics after seeding reviews
+		updateProductRatingStats();
+	}
+
+	private void updateProductRatingStats() {
+		log.info("Updating product rating statistics...");
+		
+		List<Product> products = productRepository.findAll();
+		
+		for (Product product : products) {
+			Long reviewCount = reviewRepository.countByProductId(product.getId());
+			BigDecimal averageRating = reviewRepository.findAverageRatingByProductId(product.getId());
+			
+			if (averageRating != null) {
+				averageRating = averageRating.setScale(1, RoundingMode.HALF_UP);
+			}
+			
+			product.setReviewCount(reviewCount);
+			product.setAverageRating(averageRating);
+			
+			log.debug("Product {} - Reviews: {}, Average Rating: {}", 
+					product.getName(), reviewCount, averageRating);
+		}
+		
+		productRepository.saveAll(products);
+		log.info("Updated rating statistics for {} products", products.size());
 	}
 }

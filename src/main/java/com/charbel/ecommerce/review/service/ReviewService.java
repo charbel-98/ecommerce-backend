@@ -64,6 +64,9 @@ public class ReviewService {
         Review savedReview = reviewRepository.save(review);
         log.info("Review created successfully with ID: {}", savedReview.getId());
 
+        // Update product's average rating and review count
+        updateProductRatingStats(productId);
+
         return ReviewResponse.fromEntity(savedReview);
     }
 
@@ -85,6 +88,9 @@ public class ReviewService {
         Review savedReview = reviewRepository.save(review);
         log.info("Review updated successfully: {}", reviewId);
 
+        // Update product's average rating and review count
+        updateProductRatingStats(review.getProductId());
+
         return ReviewResponse.fromEntity(savedReview);
     }
 
@@ -99,8 +105,12 @@ public class ReviewService {
             throw new UnauthorizedReviewAccessException("You can only delete your own reviews");
         }
 
+        UUID productId = review.getProductId();
         reviewRepository.delete(review);
         log.info("Review deleted successfully: {}", reviewId);
+
+        // Update product's average rating and review count
+        updateProductRatingStats(productId);
     }
 
     @Transactional(readOnly = true)
@@ -198,5 +208,26 @@ public class ReviewService {
 
         log.info("Review helpful count updated to: {}", savedReview.getHelpfulCount());
         return ReviewResponse.fromEntity(savedReview);
+    }
+
+    @Transactional
+    private void updateProductRatingStats(UUID productId) {
+        log.debug("Updating rating stats for product: {}", productId);
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new EntityNotFoundException("Product not found with ID: " + productId));
+
+        Long reviewCount = reviewRepository.countByProductId(productId);
+        BigDecimal averageRating = reviewRepository.findAverageRatingByProductId(productId);
+
+        if (averageRating != null) {
+            averageRating = averageRating.setScale(1, RoundingMode.HALF_UP);
+        }
+
+        product.setReviewCount(reviewCount);
+        product.setAverageRating(averageRating);
+
+        productRepository.save(product);
+        log.debug("Updated product {} rating stats: count={}, average={}", productId, reviewCount, averageRating);
     }
 }
