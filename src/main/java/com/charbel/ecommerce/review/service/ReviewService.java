@@ -1,38 +1,52 @@
 package com.charbel.ecommerce.review.service;
 
-import com.charbel.ecommerce.exception.DuplicateReviewException;
-import com.charbel.ecommerce.exception.DuplicateHelpfulVoteException;
-import com.charbel.ecommerce.exception.ReviewNotFoundException;
-import com.charbel.ecommerce.exception.SelfHelpfulVoteException;
-import com.charbel.ecommerce.exception.UnauthorizedReviewAccessException;
-import com.charbel.ecommerce.orders.repository.OrderRepository;
-import com.charbel.ecommerce.product.entity.Product;
-import com.charbel.ecommerce.product.repository.ProductRepository;
-import com.charbel.ecommerce.review.dto.*;
-import com.charbel.ecommerce.review.entity.Review;
-import com.charbel.ecommerce.review.entity.ReviewImage;
-import com.charbel.ecommerce.review.entity.ReviewHelpfulVote;
-import com.charbel.ecommerce.review.repository.ReviewRepository;
-import com.charbel.ecommerce.review.repository.ReviewImageRepository;
-import com.charbel.ecommerce.review.repository.ReviewHelpfulVoteRepository;
-import com.charbel.ecommerce.user.entity.User;
-import com.charbel.ecommerce.user.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import javax.imageio.ImageIO;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.io.IOException;
-
 import com.charbel.ecommerce.cdn.service.CdnService;
+import com.charbel.ecommerce.exception.DuplicateHelpfulVoteException;
+import com.charbel.ecommerce.exception.DuplicateReviewException;
+import com.charbel.ecommerce.exception.ReviewNotFoundException;
+import com.charbel.ecommerce.exception.SelfHelpfulVoteException;
+import com.charbel.ecommerce.exception.UnauthorizedReviewAccessException;
+import com.charbel.ecommerce.orders.repository.OrderRepository;
+import com.charbel.ecommerce.product.entity.Product;
+import com.charbel.ecommerce.product.repository.ProductRepository;
+import com.charbel.ecommerce.review.dto.CreateReviewRequest;
+import com.charbel.ecommerce.review.dto.PaginatedReviewsResponse;
+import com.charbel.ecommerce.review.dto.ReviewResponse;
+import com.charbel.ecommerce.review.dto.ReviewSummaryResponse;
+import com.charbel.ecommerce.review.dto.UpdateReviewRequest;
+import com.charbel.ecommerce.review.entity.Review;
+import com.charbel.ecommerce.review.entity.ReviewHelpfulVote;
+import com.charbel.ecommerce.review.entity.ReviewImage;
+import com.charbel.ecommerce.review.repository.ReviewHelpfulVoteRepository;
+import com.charbel.ecommerce.review.repository.ReviewImageRepository;
+import com.charbel.ecommerce.review.repository.ReviewRepository;
+import com.charbel.ecommerce.user.entity.User;
+import com.charbel.ecommerce.user.repository.UserRepository;
+
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -49,12 +63,8 @@ public class ReviewService {
 
     @Transactional
     public ReviewResponse createReview(UUID productId, UUID userId, CreateReviewRequest request) {
-        return createReview(productId, userId, request, null);
-    }
-
-    @Transactional
-    public ReviewResponse createReview(UUID productId, UUID userId, CreateReviewRequest request, MultipartFile[] images) {
-        log.info("Creating review for product {} by user {} with {} images", 
+        MultipartFile[] images = request.getImages();
+        log.info("Creating review for product {} by user {} with {} images",
                 productId, userId, images != null ? images.length : 0);
 
         Product product = productRepository.findById(productId)
@@ -81,7 +91,6 @@ public class ReviewService {
                 .build();
 
         Review savedReview = reviewRepository.save(review);
-        log.info("Review created successfully with ID: {}", savedReview.getId());
 
         // Handle image uploads if provided
         if (images != null && images.length > 0) {
@@ -94,6 +103,8 @@ public class ReviewService {
         // Fetch the review with images loaded
         Review reviewWithImages = reviewRepository.findById(savedReview.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Review not found after creation"));
+
+        log.info("Review created successfully with ID: {}", savedReview.getId());
 
         return ReviewResponse.fromEntity(reviewWithImages);
     }
@@ -158,13 +169,22 @@ public class ReviewService {
     }
 
     @Transactional(readOnly = true)
-    public PaginatedReviewsResponse getProductReviews(UUID productId, Pageable pageable, Integer rating, String sortBy) {
-        return getProductReviews(productId, pageable, rating, sortBy, null);
+    public PaginatedReviewsResponse getProductReviews(UUID productId, Pageable pageable, Integer rating,
+            String sortBy) {
+        return getProductReviews(productId, pageable, rating, sortBy, null, null);
     }
 
     @Transactional(readOnly = true)
-    public PaginatedReviewsResponse getProductReviews(UUID productId, Pageable pageable, Integer rating, String sortBy, UUID currentUserId) {
-        log.info("Fetching reviews for product: {} with rating filter: {} for user: {}", productId, rating, currentUserId);
+    public PaginatedReviewsResponse getProductReviews(UUID productId, Pageable pageable, Integer rating, String sortBy,
+            UUID currentUserId) {
+        return getProductReviews(productId, pageable, rating, sortBy, null, currentUserId);
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedReviewsResponse getProductReviews(UUID productId, Pageable pageable, Integer rating, String sortBy,
+            Boolean images, UUID currentUserId) {
+        log.info("Fetching reviews for product: {} with rating filter: {}, images filter: {}, for user: {}", productId,
+                rating, images, currentUserId);
 
         if (!productRepository.existsById(productId)) {
             throw new EntityNotFoundException("Product not found with ID: " + productId);
@@ -172,12 +192,30 @@ public class ReviewService {
 
         Page<Review> reviewPage;
 
-        if (rating != null) {
-            reviewPage = reviewRepository.findByProductIdAndRatingOrderByCreatedAtDesc(productId, rating, pageable);
-        } else if ("helpful".equals(sortBy)) {
-            reviewPage = reviewRepository.findByProductIdOrderByHelpfulCountDescAndCreatedAtDesc(productId, pageable);
+        // Apply image filtering logic
+        boolean filterByImages = Boolean.TRUE.equals(images);
+
+        if (filterByImages) {
+            // Filter reviews that have images
+            if (rating != null) {
+                reviewPage = reviewRepository.findByProductIdAndRatingWithImagesOrderByCreatedAtDesc(productId, rating,
+                        pageable);
+            } else if ("helpful".equals(sortBy)) {
+                reviewPage = reviewRepository
+                        .findByProductIdWithImagesOrderByHelpfulCountDescAndCreatedAtDesc(productId, pageable);
+            } else {
+                reviewPage = reviewRepository.findByProductIdWithImagesOrderByCreatedAtDesc(productId, pageable);
+            }
         } else {
-            reviewPage = reviewRepository.findByProductIdOrderByCreatedAtDesc(productId, pageable);
+            // Default behavior - return all reviews
+            if (rating != null) {
+                reviewPage = reviewRepository.findByProductIdAndRatingOrderByCreatedAtDesc(productId, rating, pageable);
+            } else if ("helpful".equals(sortBy)) {
+                reviewPage = reviewRepository.findByProductIdOrderByHelpfulCountDescAndCreatedAtDesc(productId,
+                        pageable);
+            } else {
+                reviewPage = reviewRepository.findByProductIdOrderByCreatedAtDesc(productId, pageable);
+            }
         }
 
         List<ReviewResponse> reviews;
@@ -186,7 +224,7 @@ public class ReviewService {
             List<UUID> reviewIds = reviewPage.getContent().stream()
                     .map(Review::getId)
                     .collect(Collectors.toList());
-            
+
             // Check which reviews the current user has voted for
             Set<UUID> votedReviewIds = new HashSet<>();
             for (UUID reviewId : reviewIds) {
@@ -223,18 +261,18 @@ public class ReviewService {
 
         Long totalReviews = reviewRepository.countByProductId(productId);
         BigDecimal averageRating = reviewRepository.findAverageRatingByProductId(productId);
-        
+
         if (averageRating != null) {
             averageRating = averageRating.setScale(1, RoundingMode.HALF_UP);
         }
 
         List<Object[]> distribution = reviewRepository.findRatingDistributionByProductId(productId);
         Map<Integer, Long> ratingDistribution = new HashMap<>();
-        
+
         for (int i = 1; i <= 5; i++) {
             ratingDistribution.put(i, 0L);
         }
-        
+
         for (Object[] row : distribution) {
             Integer rating = (Integer) row[0];
             Long count = (Long) row[1];
@@ -335,30 +373,56 @@ public class ReviewService {
         }
 
         List<ReviewImage> reviewImages = new ArrayList<>();
-        
+
         for (int i = 0; i < images.length; i++) {
             MultipartFile imageFile = images[i];
-            
+
             // Validate file
             if (imageFile.isEmpty()) {
                 continue;
             }
-            
-            // Validate file type
+
+            // Validate file type (robust): prefer Content-Type, fall back to
+            // signature/extension
             String contentType = imageFile.getContentType();
-            if (contentType == null || !contentType.startsWith("image/")) {
+            boolean isImage = contentType != null && contentType.startsWith("image/");
+
+            if (!isImage) {
+                // Try reading as an image (magic number sniffing)
+                try {
+                    isImage = ImageIO.read(imageFile.getInputStream()) != null;
+                } catch (IOException e) {
+                    isImage = false;
+                }
+            }
+
+            if (!isImage) {
+                // Fallback to extension check for formats ImageIO may not support (e.g., heic)
+                String filename = imageFile.getOriginalFilename();
+                if (filename != null) {
+                    String lower = filename.toLowerCase();
+                    isImage = lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png")
+                            || lower.endsWith(".gif") || lower.endsWith(".webp") || lower.endsWith(".bmp")
+                            || lower.endsWith(".tiff") || lower.endsWith(".tif") || lower.endsWith(".heic")
+                            || lower.endsWith(".heif") || lower.endsWith(".svg");
+                }
+            }
+
+            if (!isImage) {
+                log.warn("Rejected non-image upload. filename={}, contentType={}", imageFile.getOriginalFilename(),
+                        contentType);
                 throw new IllegalArgumentException("Only image files are allowed");
             }
-            
+
             // Validate file size (max 5MB)
             if (imageFile.getSize() > 5 * 1024 * 1024) {
                 throw new IllegalArgumentException("Image file size must be less than 5MB");
             }
-            
+
             try {
                 // Upload to CDN
                 String imageUrl = cdnService.uploadImage(imageFile, "reviews");
-                
+
                 // Create ReviewImage entity
                 ReviewImage reviewImage = ReviewImage.builder()
                         .review(review)
@@ -367,16 +431,16 @@ public class ReviewService {
                         .altText("Review image " + (i + 1))
                         .sortOrder(i)
                         .build();
-                        
+
                 reviewImages.add(reviewImage);
                 log.debug("Uploaded review image: {}", imageUrl);
-                
+
             } catch (IOException e) {
                 log.error("Failed to upload review image for review {}", review.getId(), e);
                 throw new RuntimeException("Failed to upload review image: " + e.getMessage(), e);
             }
         }
-        
+
         // Save all review images
         if (!reviewImages.isEmpty()) {
             reviewImageRepository.saveAll(reviewImages);

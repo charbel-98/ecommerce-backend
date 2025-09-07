@@ -39,4 +39,14 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
 
     @Query("SELECT r FROM Review r WHERE r.productId = :productId ORDER BY r.helpfulCount DESC, r.createdAt DESC")
     Page<Review> findByProductIdOrderByHelpfulCountDescAndCreatedAtDesc(@Param("productId") UUID productId, Pageable pageable);
+
+    // Queries for reviews with images
+    @Query("SELECT DISTINCT r FROM Review r INNER JOIN r.images WHERE r.productId = :productId ORDER BY r.createdAt DESC")
+    Page<Review> findByProductIdWithImagesOrderByCreatedAtDesc(@Param("productId") UUID productId, Pageable pageable);
+
+    @Query("SELECT DISTINCT r FROM Review r INNER JOIN r.images WHERE r.productId = :productId AND r.rating = :rating ORDER BY r.createdAt DESC")
+    Page<Review> findByProductIdAndRatingWithImagesOrderByCreatedAtDesc(@Param("productId") UUID productId, @Param("rating") Integer rating, Pageable pageable);
+
+    @Query("SELECT DISTINCT r FROM Review r INNER JOIN r.images WHERE r.productId = :productId ORDER BY r.helpfulCount DESC, r.createdAt DESC")
+    Page<Review> findByProductIdWithImagesOrderByHelpfulCountDescAndCreatedAtDesc(@Param("productId") UUID productId, Pageable pageable);
 }

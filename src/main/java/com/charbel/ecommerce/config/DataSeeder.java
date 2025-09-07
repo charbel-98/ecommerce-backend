@@ -17,6 +17,8 @@ import com.charbel.ecommerce.review.entity.Review;
 import com.charbel.ecommerce.review.repository.ReviewRepository;
 import com.charbel.ecommerce.user.entity.User;
 import com.charbel.ecommerce.user.repository.UserRepository;
+import com.charbel.ecommerce.address.entity.Address;
+import com.charbel.ecommerce.address.repository.AddressRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -43,6 +45,7 @@ public class DataSeeder implements CommandLineRunner {
 	private final EventRepository eventRepository;
 	private final DiscountRepository discountRepository;
 	private final ReviewRepository reviewRepository;
+	private final AddressRepository addressRepository;
 	private final PasswordEncoder passwordEncoder;
 
 	@Override
@@ -56,6 +59,7 @@ public class DataSeeder implements CommandLineRunner {
 		seedEventProductLinks();
 		seedReviewUser();
 		seedReviews();
+		seedAddresses();
 	}
 
 	private void seedAdminUser() {
@@ -578,5 +582,78 @@ public class DataSeeder implements CommandLineRunner {
 		
 		productRepository.saveAll(products);
 		log.info("Updated rating statistics for {} products", products.size());
+	}
+
+	private void seedAddresses() {
+		if (addressRepository.count() > 0) {
+			log.info("Addresses already exist, skipping address seeding");
+			return;
+		}
+
+		User charbelUser = userRepository.findByEmail("charbel_cg@outlook.com").orElse(null);
+		if (charbelUser == null) {
+			log.warn("Charbel user not found, skipping address seeding");
+			return;
+		}
+
+		List<Address> addresses = List.of(
+			// Home address in Beirut (default)
+			Address.builder()
+				.user(charbelUser)
+				.street("123 Hamra Street, Building A, Floor 3")
+				.city("Beirut")
+				.state("Beirut Governorate")
+				.zipCode("1103-2070")
+				.country("Lebanon")
+				.isDefault(true)
+				.build(),
+
+			// Work address in Downtown Beirut
+			Address.builder()
+				.user(charbelUser)
+				.street("456 Martyrs' Square, Tower B, Office 1205")
+				.city("Beirut")
+				.state("Beirut Governorate") 
+				.zipCode("1107-2020")
+				.country("Lebanon")
+				.isDefault(false)
+				.build(),
+
+			// Family address in Jounieh
+			Address.builder()
+				.user(charbelUser)
+				.street("789 Maameltein Highway, Villa 25")
+				.city("Jounieh")
+				.state("Mount Lebanon Governorate")
+				.zipCode("1200-1050")
+				.country("Lebanon")
+				.isDefault(false)
+				.build(),
+
+			// Beach house in Batroun
+			Address.builder()
+				.user(charbelUser)
+				.street("321 Coastal Road, Seaside Resort Complex")
+				.city("Batroun")
+				.state("North Governorate")
+				.zipCode("1400-3080")
+				.country("Lebanon")
+				.isDefault(false)
+				.build(),
+
+			// Mountain cabin in Bcharre
+			Address.builder()
+				.user(charbelUser)
+				.street("654 Cedar Mountains Road, Chalet 12")
+				.city("Bcharre")
+				.state("North Governorate")
+				.zipCode("1401-7020")
+				.country("Lebanon")
+				.isDefault(false)
+				.build()
+		);
+
+		addressRepository.saveAll(addresses);
+		log.info("Seeded {} addresses for user: {}", addresses.size(), charbelUser.getEmail());
 	}
 }
