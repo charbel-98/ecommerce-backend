@@ -27,6 +27,19 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 			+ "WHERE p.categoryId = :categoryId AND p.status = 'ACTIVE'")
 	Page<Product> findProductsByCategoryId(@Param("categoryId") UUID categoryId, Pageable pageable);
 
+	@Query("SELECT p FROM Product p LEFT JOIN FETCH p.variants LEFT JOIN FETCH p.brand LEFT JOIN FETCH p.category "
+			+ "WHERE p.categoryId = :categoryId AND p.status = 'ACTIVE' "
+			+ "ORDER BY "
+			+ "CASE WHEN :sortType = 'PRICE_HIGH_TO_LOW' THEN p.basePrice END DESC, "
+			+ "CASE WHEN :sortType = 'PRICE_LOW_TO_HIGH' THEN p.basePrice END ASC, "
+			+ "CASE WHEN :sortType = 'REVIEWS' THEN p.averageRating END DESC, "
+			+ "CASE WHEN :sortType = 'REVIEWS' THEN p.reviewCount END DESC, "
+			+ "CASE WHEN :sortType = 'NEWEST' THEN p.createdAt END DESC, "
+			+ "p.id ASC")
+	Page<Product> findProductsByCategoryIdWithSort(@Param("categoryId") UUID categoryId, 
+												   @Param("sortType") String sortType, 
+												   Pageable pageable);
+
 	@Query("SELECT p FROM Product p LEFT JOIN FETCH p.variants LEFT JOIN FETCH p.brand b LEFT JOIN FETCH p.category "
 			+ "WHERE b.slug = :brandSlug AND p.status = 'ACTIVE' AND b.status = 'ACTIVE'")
 	Page<Product> findProductsByBrandSlug(@Param("brandSlug") String brandSlug, Pageable pageable);

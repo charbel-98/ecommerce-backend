@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.charbel.ecommerce.common.enums.ProductSortType;
 import com.charbel.ecommerce.product.dto.AddStockRequest;
 import com.charbel.ecommerce.product.dto.AddStockResponse;
 import com.charbel.ecommerce.product.dto.LowStockResponse;
@@ -133,12 +134,13 @@ public class ProductController {
 	}
 
 	@GetMapping("/products/category/{categoryId}")
-	@Operation(summary = "Get products by category", description = "Returns a paginated list of products from a specific category")
+	@Operation(summary = "Get products by category", description = "Returns a paginated list of products from a specific category with optional sorting")
 	public ResponseEntity<Page<ProductResponse>> getProductsByCategory(@PathVariable UUID categoryId,
+			@RequestParam(required = false, defaultValue = "DEFAULT") ProductSortType sortType,
 			@PageableDefault(size = 20) Pageable pageable) {
-		log.info("Fetching products for category ID: {} with pagination: page={}, size={}", categoryId,
-				pageable.getPageNumber(), pageable.getPageSize());
-		Page<ProductResponse> response = productService.getProductsByCategoryId(categoryId, pageable);
+		log.info("Fetching products for category ID: {} with sortType: {} and pagination: page={}, size={}", 
+				categoryId, sortType, pageable.getPageNumber(), pageable.getPageSize());
+		Page<ProductResponse> response = productService.getProductsByCategoryId(categoryId, sortType, pageable);
 		return ResponseEntity.ok(response);
 	}
 

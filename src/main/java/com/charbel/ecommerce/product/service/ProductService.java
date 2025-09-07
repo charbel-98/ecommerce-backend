@@ -3,6 +3,7 @@ package com.charbel.ecommerce.product.service;
 import com.charbel.ecommerce.ai.service.ColorVariantImageService;
 import com.charbel.ecommerce.category.service.CategoryService;
 import com.charbel.ecommerce.common.enums.GenderType;
+import com.charbel.ecommerce.common.enums.ProductSortType;
 import com.charbel.ecommerce.event.entity.Discount;
 import com.charbel.ecommerce.event.entity.Event;
 import com.charbel.ecommerce.product.dto.*;
@@ -356,6 +357,20 @@ public class ProductService {
 				pageable.getPageSize());
 
 		Page<Product> products = productRepository.findProductsByCategoryId(categoryId, pageable);
+		return products.map(this::mapToProductResponse);
+	}
+
+	@Transactional(readOnly = true)
+	public Page<ProductResponse> getProductsByCategoryId(UUID categoryId, ProductSortType sortType, Pageable pageable) {
+		log.info("Fetching products by category ID: {} with sortType: {} with page: {}, size: {}", 
+				categoryId, sortType, pageable.getPageNumber(), pageable.getPageSize());
+
+		Page<Product> products;
+		if (sortType == null || sortType == ProductSortType.DEFAULT) {
+			products = productRepository.findProductsByCategoryId(categoryId, pageable);
+		} else {
+			products = productRepository.findProductsByCategoryIdWithSort(categoryId, sortType.name(), pageable);
+		}
 		return products.map(this::mapToProductResponse);
 	}
 
