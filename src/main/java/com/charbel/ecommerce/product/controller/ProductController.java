@@ -143,6 +143,7 @@ public class ProductController {
 			@RequestParam(required = false) BigDecimal maxPrice,
 			@RequestParam(required = false) List<String> colors,
 			@RequestParam(required = false) List<String> sizes,
+			@RequestParam(required = false) List<String> brandSlugs,
 			@PageableDefault(size = 20) Pageable pageable) {
 		log.info("Fetching products for category ID: {} with sortType: {} and pagination: page={}, size={}", 
 				categoryId, sortType, pageable.getPageNumber(), pageable.getPageSize());
@@ -153,6 +154,7 @@ public class ProductController {
 				.maxPrice(maxPrice)
 				.colors(colors)
 				.sizes(sizes)
+				.brandSlugs(brandSlugs)
 				.build();
 		
 		Page<ProductResponse> response = productService.getFilteredProductsByCategoryId(categoryId, sortType, filterRequest, pageable);

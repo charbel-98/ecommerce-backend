@@ -56,10 +56,12 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
 	@Query("SELECT DISTINCT p FROM Product p " +
 		   "LEFT JOIN FETCH p.variants v " +
-		   "LEFT JOIN FETCH p.brand " +
+		   "LEFT JOIN FETCH p.brand b " +
 		   "LEFT JOIN FETCH p.category " +
 		   "WHERE p.categoryId = :categoryId " +
 		   "AND p.status = 'ACTIVE' " +
+		   "AND b.status = 'ACTIVE' " +
+		   "AND (:#{#brandSlugs == null} = true OR b.slug IN :brandSlugs) " +
 		   "AND EXISTS (" +
 		   "  SELECT 1 FROM ProductVariant pv " +
 		   "  WHERE pv.product.id = p.id " +
@@ -75,14 +77,17 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 												   @Param("maxPrice") BigDecimal maxPrice,
 												   @Param("colors") List<String> colors,
 												   @Param("sizes") List<String> sizes,
+												   @Param("brandSlugs") List<String> brandSlugs,
 												   Pageable pageable);
 
 	@Query("SELECT DISTINCT p FROM Product p " +
 		   "LEFT JOIN FETCH p.variants v " +
-		   "LEFT JOIN FETCH p.brand " +
+		   "LEFT JOIN FETCH p.brand b " +
 		   "LEFT JOIN FETCH p.category " +
 		   "WHERE p.categoryId = :categoryId " +
 		   "AND p.status = 'ACTIVE' " +
+		   "AND b.status = 'ACTIVE' " +
+		   "AND (:#{#brandSlugs == null} = true OR b.slug IN :brandSlugs) " +
 		   "AND EXISTS (" +
 		   "  SELECT 1 FROM ProductVariant pv " +
 		   "  WHERE pv.product.id = p.id " +
@@ -105,6 +110,7 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 														   @Param("maxPrice") BigDecimal maxPrice,
 														   @Param("colors") List<String> colors,
 														   @Param("sizes") List<String> sizes,
+														   @Param("brandSlugs") List<String> brandSlugs,
 														   @Param("sortType") String sortType,
 														   Pageable pageable);
 }

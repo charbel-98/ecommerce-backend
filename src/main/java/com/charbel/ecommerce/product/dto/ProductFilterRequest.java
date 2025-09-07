@@ -24,4 +24,6 @@ public class ProductFilterRequest {
     private List<String> colors;
 
     private List<String> sizes;
+
+    private List<String> brandSlugs;
 }

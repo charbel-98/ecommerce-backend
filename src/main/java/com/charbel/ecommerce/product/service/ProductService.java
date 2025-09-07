@@ -390,14 +390,15 @@ public class ProductService {
 			filterRequest.getColors().stream().map(String::toUpperCase).collect(Collectors.toList()) : null;
 		List<String> upperSizes = filterRequest.getSizes() != null && !filterRequest.getSizes().isEmpty() ?
 			filterRequest.getSizes().stream().map(String::toUpperCase).collect(Collectors.toList()) : null;
+		List<String> brandSlugs = filterRequest.getBrandSlugs();
 
 		Page<Product> products;
 		if (sortType == null || sortType == ProductSortType.DEFAULT) {
 			products = productRepository.findFilteredProductsByCategoryId(
-				categoryId, minPrice, maxPrice, upperColors, upperSizes, pageable);
+				categoryId, minPrice, maxPrice, upperColors, upperSizes, brandSlugs, pageable);
 		} else {
 			products = productRepository.findFilteredProductsByCategoryIdWithSort(
-				categoryId, minPrice, maxPrice, upperColors, upperSizes, sortType.name(), pageable);
+				categoryId, minPrice, maxPrice, upperColors, upperSizes, brandSlugs, sortType.name(), pageable);
 		}
 		
 		return products.map(this::mapToProductResponse);
