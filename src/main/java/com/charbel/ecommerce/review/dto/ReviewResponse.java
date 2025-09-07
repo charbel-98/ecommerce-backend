@@ -7,7 +7,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Data
 @NoArgsConstructor
@@ -27,8 +29,16 @@ public class ReviewResponse {
     private Integer helpfulCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private List<ReviewImageResponse> images;
 
     public static ReviewResponse fromEntity(Review review) {
+        List<ReviewImageResponse> imageResponses = null;
+        if (review.getImages() != null) {
+            imageResponses = review.getImages().stream()
+                    .map(ReviewImageResponse::fromEntity)
+                    .collect(Collectors.toList());
+        }
+
         return ReviewResponse.builder()
                 .id(review.getId())
                 .productId(review.getProductId())
@@ -42,6 +52,7 @@ public class ReviewResponse {
                 .helpfulCount(review.getHelpfulCount())
                 .createdAt(review.getCreatedAt())
                 .updatedAt(review.getUpdatedAt())
+                .images(imageResponses)
                 .build();
     }
 }

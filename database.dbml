@@ -285,6 +285,16 @@ Enum discountType {
   updatedAt datetime [not null]
 }
 
+ review_images {
+  id UUID [pk]
+  reviewId UUID [not null] // foreign key to reviews
+  imageUrl varchar [not null] // CDN URL for the image
+  altText varchar // alternative text for accessibility
+  sortOrder int [not null, default: 0] // order of images in the review
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+}
+
 ////////////////////////////////////////////////////
 // GRAY — Logs
  audit_logs {
@@ -318,6 +328,9 @@ Enum discountType {
  product_images.productId > products.id
  product_images.variantId > product_variants.id // optional
  reviews.productId > products.id
+
+// Reviews → Review Images
+ review_images.reviewId > reviews.id
 
 // Cart → Cart Items → Variants
  cart_items.cartId > carts.id
@@ -404,5 +417,12 @@ Table reviews {
     rating [name: 'idx_reviews_rating']
     createdAt [name: 'idx_reviews_created']
     (userId, productId) [name: 'idx_reviews_user_product', unique: true]
+  }
+}
+
+Table review_images {
+  indexes {
+    reviewId [name: 'idx_review_images_review']
+    (reviewId, sortOrder) [name: 'idx_review_images_sort']
   }
 }

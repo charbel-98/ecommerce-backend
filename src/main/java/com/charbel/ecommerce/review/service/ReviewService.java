@@ -8,7 +8,9 @@ import com.charbel.ecommerce.product.entity.Product;
 import com.charbel.ecommerce.product.repository.ProductRepository;
 import com.charbel.ecommerce.review.dto.*;
 import com.charbel.ecommerce.review.entity.Review;
+import com.charbel.ecommerce.review.entity.ReviewImage;
 import com.charbel.ecommerce.review.repository.ReviewRepository;
+import com.charbel.ecommerce.review.repository.ReviewImageRepository;
 import com.charbel.ecommerce.user.entity.User;
 import com.charbel.ecommerce.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -18,11 +20,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.io.IOException;
+
+import com.charbel.ecommerce.cdn.service.CdnService;
 
 @Service
 @RequiredArgsConstructor
@@ -30,13 +36,21 @@ import java.util.stream.Collectors;
 public class ReviewService {
 
     private final ReviewRepository reviewRepository;
+    private final ReviewImageRepository reviewImageRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
+    private final CdnService cdnService;
 
     @Transactional
     public ReviewResponse createReview(UUID productId, UUID userId, CreateReviewRequest request) {
-        log.info("Creating review for product {} by user {}", productId, userId);
+        return createReview(productId, userId, request, null);
+    }
+
+    @Transactional
+    public ReviewResponse createReview(UUID productId, UUID userId, CreateReviewRequest request, MultipartFile[] images) {
+        log.info("Creating review for product {} by user {} with {} images", 
+                productId, userId, images != null ? images.length : 0);
 
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found with ID: " + productId));
@@ -64,10 +78,19 @@ public class ReviewService {
         Review savedReview = reviewRepository.save(review);
         log.info("Review created successfully with ID: {}", savedReview.getId());
 
+        // Handle image uploads if provided
+        if (images != null && images.length > 0) {
+            uploadAndSaveReviewImages(savedReview, images);
+        }
+
         // Update product's average rating and review count
         updateProductRatingStats(productId);
 
-        return ReviewResponse.fromEntity(savedReview);
+        // Fetch the review with images loaded
+        Review reviewWithImages = reviewRepository.findById(savedReview.getId())
+                .orElseThrow(() -> new EntityNotFoundException("Review not found after creation"));
+
+        return ReviewResponse.fromEntity(reviewWithImages);
     }
 
     @Transactional
@@ -106,6 +129,18 @@ public class ReviewService {
         }
 
         UUID productId = review.getProductId();
+
+        // Delete review images from CDN first
+        List<ReviewImage> reviewImages = reviewImageRepository.findByReviewIdOrderBySortOrderAsc(reviewId);
+        for (ReviewImage reviewImage : reviewImages) {
+            try {
+                cdnService.deleteImageByUrl(reviewImage.getImageUrl());
+                log.debug("Deleted review image from CDN: {}", reviewImage.getImageUrl());
+            } catch (Exception e) {
+                log.warn("Failed to delete review image from CDN: {}", reviewImage.getImageUrl(), e);
+            }
+        }
+
         reviewRepository.delete(review);
         log.info("Review deleted successfully: {}", reviewId);
 
@@ -229,5 +264,65 @@ public class ReviewService {
 
         productRepository.save(product);
         log.debug("Updated product {} rating stats: count={}, average={}", productId, reviewCount, averageRating);
+    }
+
+    private void uploadAndSaveReviewImages(Review review, MultipartFile[] images) {
+        if (images == null || images.length == 0) {
+            return;
+        }
+
+        // Validate image files and upload limit (max 5 images per review)
+        if (images.length > 5) {
+            throw new IllegalArgumentException("Maximum 5 images allowed per review");
+        }
+
+        List<ReviewImage> reviewImages = new ArrayList<>();
+        
+        for (int i = 0; i < images.length; i++) {
+            MultipartFile imageFile = images[i];
+            
+            // Validate file
+            if (imageFile.isEmpty()) {
+                continue;
+            }
+            
+            // Validate file type
+            String contentType = imageFile.getContentType();
+            if (contentType == null || !contentType.startsWith("image/")) {
+                throw new IllegalArgumentException("Only image files are allowed");
+            }
+            
+            // Validate file size (max 5MB)
+            if (imageFile.getSize() > 5 * 1024 * 1024) {
+                throw new IllegalArgumentException("Image file size must be less than 5MB");
+            }
+            
+            try {
+                // Upload to CDN
+                String imageUrl = cdnService.uploadImage(imageFile, "reviews");
+                
+                // Create ReviewImage entity
+                ReviewImage reviewImage = ReviewImage.builder()
+                        .review(review)
+                        .reviewId(review.getId())
+                        .imageUrl(imageUrl)
+                        .altText("Review image " + (i + 1))
+                        .sortOrder(i)
+                        .build();
+                        
+                reviewImages.add(reviewImage);
+                log.debug("Uploaded review image: {}", imageUrl);
+                
+            } catch (IOException e) {
+                log.error("Failed to upload review image for review {}", review.getId(), e);
+                throw new RuntimeException("Failed to upload review image: " + e.getMessage(), e);
+            }
+        }
+        
+        // Save all review images
+        if (!reviewImages.isEmpty()) {
+            reviewImageRepository.saveAll(reviewImages);
+            log.info("Saved {} images for review {}", reviewImages.size(), review.getId());
+        }
     }
 }
