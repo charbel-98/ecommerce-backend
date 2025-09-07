@@ -20,6 +20,7 @@ public class CreateOrderResponse {
 	private UUID addressId;
 	private Integer originalAmount;
 	private Integer discountAmount;
+	private Integer deliveryFee;
 	private Integer totalAmount;
 	private Order.OrderStatus status;
 	private List<OrderItemResponse> orderItems;

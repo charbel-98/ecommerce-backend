@@ -45,6 +45,10 @@ public class Order {
 	@Builder.Default
 	private Integer discountAmount = 0;
 
+	@Column(name = "delivery_fee", nullable = false)
+	@Builder.Default
+	private Integer deliveryFee = 500;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	@Builder.Default

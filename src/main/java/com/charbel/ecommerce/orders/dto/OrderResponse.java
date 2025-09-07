@@ -21,6 +21,9 @@ public class OrderResponse {
 	private String userEmail;
 	private String userFirstName;
 	private String userLastName;
+	private Integer originalAmount;
+	private Integer discountAmount;
+	private Integer deliveryFee;
 	private Integer totalAmount;
 	private OrderStatus status;
 	private List<OrderItemResponse> orderItems;

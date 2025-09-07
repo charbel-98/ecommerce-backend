@@ -12,8 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import com.charbel.ecommerce.service.SecurityService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,6 +27,7 @@ import java.util.UUID;
 public class AddressController {
 
     private final AddressService addressService;
+    private final SecurityService securityService;
 
     @GetMapping
     @Operation(summary = "Get all addresses for the current user")
@@ -86,7 +86,6 @@ public class AddressController {
     }
 
     private UUID getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return UUID.fromString(authentication.getName());
+        return securityService.getCurrentUserId();
     }
 }

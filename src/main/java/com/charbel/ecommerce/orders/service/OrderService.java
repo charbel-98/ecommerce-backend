@@ -5,6 +5,7 @@ import com.charbel.ecommerce.address.repository.AddressRepository;
 import com.charbel.ecommerce.event.entity.Discount;
 import com.charbel.ecommerce.event.entity.Event;
 import com.charbel.ecommerce.event.repository.EventRepository;
+import com.charbel.ecommerce.orders.dto.BillResponse;
 import com.charbel.ecommerce.orders.dto.CreateOrderRequest;
 import com.charbel.ecommerce.orders.dto.CreateOrderResponse;
 import com.charbel.ecommerce.orders.dto.OrderItemResponse;
@@ -16,10 +17,10 @@ import com.charbel.ecommerce.product.entity.Product;
 import com.charbel.ecommerce.product.entity.ProductVariant;
 import com.charbel.ecommerce.product.repository.ProductVariantRepository;
 import com.charbel.ecommerce.user.entity.User;
+import com.charbel.ecommerce.service.SecurityService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +39,7 @@ public class OrderService {
 	private final ProductVariantRepository productVariantRepository;
 	private final AddressRepository addressRepository;
 	private final EventRepository eventRepository;
+	private final SecurityService securityService;
 
 	public List<OrderResponse> getAllOrders() {
 		log.info("Fetching all orders for admin");
@@ -48,7 +50,7 @@ public class OrderService {
 
 	@Transactional
 	public CreateOrderResponse createOrder(CreateOrderRequest request) {
-		User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+		User currentUser = securityService.getCurrentUser();
 		
 		// Validate address ownership
 		Address address = validateAddressOwnership(request.getAddressId(), currentUser.getId());
@@ -92,7 +94,10 @@ public class OrderService {
 		// Calculate discounts
 		Map<UUID, Discount> productDiscountMap = findApplicableDiscounts(variants);
 		Integer discountAmountCents = calculateTotalDiscount(variants, variantQuantityMap, productDiscountMap, originalTotalCents);
-		Integer finalTotalCents = originalTotalCents - discountAmountCents;
+		
+		// Add delivery fee (500 cents = $5.00)
+		Integer deliveryFeeCents = 500;
+		Integer finalTotalCents = originalTotalCents - discountAmountCents + deliveryFeeCents;
 		
 		// Create order
 		Order order = Order.builder()
@@ -100,6 +105,7 @@ public class OrderService {
 			.address(address)
 			.originalAmount(originalTotalCents)
 			.discountAmount(discountAmountCents)
+			.deliveryFee(deliveryFeeCents)
 			.totalAmount(finalTotalCents)
 			.status(Order.OrderStatus.PENDING)
 			.build();
@@ -143,9 +149,123 @@ public class OrderService {
 	}
 
 	public List<OrderResponse> getUserOrders() {
-		User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+		User currentUser = securityService.getCurrentUser();
 		List<Order> orders = orderRepository.findByUserIdWithDetails(currentUser.getId());
 		return orders.stream().map(this::mapToOrderResponse).collect(Collectors.toList());
+	}
+
+	public BillResponse calculateBill(CreateOrderRequest request) {
+		// Fetch and validate variants
+		List<UUID> variantIds = request.getItems().stream()
+			.map(CreateOrderRequest.OrderItemRequest::getVariantId)
+			.collect(Collectors.toList());
+		
+		List<ProductVariant> variants = productVariantRepository.findByIdInWithProduct(variantIds);
+		
+		if (variants.size() != variantIds.size()) {
+			throw new EntityNotFoundException("One or more product variants not found");
+		}
+		
+		Map<UUID, Integer> variantQuantityMap = request.getItems().stream()
+			.collect(Collectors.toMap(
+				CreateOrderRequest.OrderItemRequest::getVariantId, 
+				CreateOrderRequest.OrderItemRequest::getQuantity
+			));
+		
+		// Validate stock availability
+		for (ProductVariant variant : variants) {
+			Integer requestedQuantity = variantQuantityMap.get(variant.getId());
+			if (variant.getStock() < requestedQuantity) {
+				throw new IllegalArgumentException(
+					String.format("Insufficient stock for product %s. Available: %d, Requested: %d", 
+						variant.getProduct().getName(), variant.getStock(), requestedQuantity)
+				);
+			}
+		}
+		
+		// Calculate subtotal
+		BigDecimal subtotal = BigDecimal.ZERO;
+		List<BillResponse.BillItemResponse> billItems = new ArrayList<>();
+		
+		for (ProductVariant variant : variants) {
+			Integer requestedQuantity = variantQuantityMap.get(variant.getId());
+			BigDecimal unitPrice = variant.getPrice();
+			BigDecimal totalItemPrice = unitPrice.multiply(BigDecimal.valueOf(requestedQuantity));
+			
+			subtotal = subtotal.add(totalItemPrice);
+			
+			BillResponse.BillItemResponse billItem = BillResponse.BillItemResponse.builder()
+				.productName(variant.getProduct().getName())
+				.sku(variant.getSku())
+				.quantity(requestedQuantity)
+				.unitPrice(unitPrice)
+				.originalUnitPrice(unitPrice)
+				.totalPrice(totalItemPrice)
+				.discountAmount(BigDecimal.ZERO)
+				.build();
+			
+			billItems.add(billItem);
+		}
+		
+		// Calculate discounts
+		Map<UUID, Discount> productDiscountMap = findApplicableDiscounts(variants);
+		BigDecimal totalDiscountAmount = calculateBillDiscounts(variants, variantQuantityMap, productDiscountMap);
+		
+		// Apply discounts to bill items
+		for (BillResponse.BillItemResponse billItem : billItems) {
+			ProductVariant variant = variants.stream()
+				.filter(v -> v.getSku().equals(billItem.getSku()))
+				.findFirst()
+				.orElse(null);
+			
+			if (variant != null && productDiscountMap.containsKey(variant.getProduct().getId())) {
+				Integer requestedQuantity = variantQuantityMap.get(variant.getId());
+				BigDecimal originalTotal = billItem.getOriginalUnitPrice().multiply(BigDecimal.valueOf(requestedQuantity));
+				
+				Discount discount = productDiscountMap.get(variant.getProduct().getId());
+				BigDecimal itemDiscountAmount = discount.calculateDiscountAmount(originalTotal);
+				
+				BigDecimal discountedTotal = originalTotal.subtract(itemDiscountAmount);
+				BigDecimal discountedUnitPrice = discountedTotal.divide(BigDecimal.valueOf(requestedQuantity), 2, RoundingMode.HALF_UP);
+				
+				billItem.setUnitPrice(discountedUnitPrice);
+				billItem.setTotalPrice(discountedTotal);
+				billItem.setDiscountAmount(itemDiscountAmount);
+			}
+		}
+		
+		// Fixed delivery fee of $5.00
+		BigDecimal deliveryFee = new BigDecimal("5.00");
+		
+		// Calculate final total
+		BigDecimal finalTotal = subtotal.subtract(totalDiscountAmount).add(deliveryFee);
+		
+		return BillResponse.builder()
+			.subtotal(subtotal)
+			.discountAmount(totalDiscountAmount)
+			.deliveryFee(deliveryFee)
+			.totalAmount(finalTotal)
+			.items(billItems)
+			.build();
+	}
+
+	private BigDecimal calculateBillDiscounts(List<ProductVariant> variants, 
+											  Map<UUID, Integer> variantQuantityMap,
+											  Map<UUID, Discount> productDiscountMap) {
+		BigDecimal totalDiscountAmount = BigDecimal.ZERO;
+		
+		for (ProductVariant variant : variants) {
+			if (productDiscountMap.containsKey(variant.getProduct().getId())) {
+				Integer requestedQuantity = variantQuantityMap.get(variant.getId());
+				BigDecimal itemTotal = variant.getPrice().multiply(BigDecimal.valueOf(requestedQuantity));
+				
+				Discount discount = productDiscountMap.get(variant.getProduct().getId());
+				BigDecimal itemDiscountAmount = discount.calculateDiscountAmount(itemTotal);
+				totalDiscountAmount = totalDiscountAmount.add(itemDiscountAmount);
+			}
+		}
+		
+		return totalDiscountAmount;
 	}
 
 	private Address validateAddressOwnership(UUID addressId, UUID userId) {
@@ -212,6 +332,7 @@ public class OrderService {
 			.addressId(order.getAddress().getId())
 			.originalAmount(order.getOriginalAmount())
 			.discountAmount(order.getDiscountAmount())
+			.deliveryFee(order.getDeliveryFee())
 			.totalAmount(order.getTotalAmount())
 			.status(order.getStatus())
 			.orderItems(orderItemResponses)
@@ -225,9 +346,10 @@ public class OrderService {
 
 		return OrderResponse.builder().id(order.getId()).userId(order.getUser().getId())
 				.userEmail(order.getUser().getEmail()).userFirstName(order.getUser().getFirstName())
-				.userLastName(order.getUser().getLastName()).totalAmount(order.getTotalAmount())
-				.status(order.getStatus()).orderItems(orderItemResponses).createdAt(order.getCreatedAt())
-				.updatedAt(order.getUpdatedAt()).build();
+				.userLastName(order.getUser().getLastName()).originalAmount(order.getOriginalAmount())
+				.discountAmount(order.getDiscountAmount()).deliveryFee(order.getDeliveryFee())
+				.totalAmount(order.getTotalAmount()).status(order.getStatus()).orderItems(orderItemResponses)
+				.createdAt(order.getCreatedAt()).updatedAt(order.getUpdatedAt()).build();
 	}
 
 	private OrderItemResponse mapToOrderItemResponse(OrderItem orderItem) {

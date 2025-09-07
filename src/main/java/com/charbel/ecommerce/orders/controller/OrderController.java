@@ -1,5 +1,6 @@
 package com.charbel.ecommerce.orders.controller;
 
+import com.charbel.ecommerce.orders.dto.BillResponse;
 import com.charbel.ecommerce.orders.dto.CreateOrderRequest;
 import com.charbel.ecommerce.orders.dto.CreateOrderResponse;
 import com.charbel.ecommerce.orders.dto.OrderResponse;
@@ -27,7 +28,7 @@ public class OrderController {
 	private final OrderService orderService;
 
 	@PostMapping("/orders")
-	@PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+	@PreAuthorize("hasRole('CUSTOMER') or hasRole('ADMIN')")
 	@Operation(summary = "Create a new order", description = "Creates a new order for the authenticated customer", security = @SecurityRequirement(name = "bearerAuth"))
 	public ResponseEntity<CreateOrderResponse> createOrder(@Valid @RequestBody CreateOrderRequest request) {
 		log.info("Creating new order with {} items", request.getItems().size());
@@ -36,11 +37,20 @@ public class OrderController {
 	}
 
 	@GetMapping("/orders/me")
-	@PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+	@PreAuthorize("hasRole('CUSTOMER') or hasRole('ADMIN')")
 	@Operation(summary = "Get current user's orders", description = "Returns orders for the authenticated customer", security = @SecurityRequirement(name = "bearerAuth"))
 	public ResponseEntity<List<OrderResponse>> getUserOrders() {
 		log.info("Fetching orders for current user");
 		List<OrderResponse> response = orderService.getUserOrders();
+		return ResponseEntity.ok(response);
+	}
+
+	@PostMapping("/orders/bill")
+	@PreAuthorize("hasRole('CUSTOMER') or hasRole('ADMIN')")
+	@Operation(summary = "Calculate order bill", description = "Calculates the bill for an order including discounts and delivery fees", security = @SecurityRequirement(name = "bearerAuth"))
+	public ResponseEntity<BillResponse> calculateBill(@Valid @RequestBody CreateOrderRequest request) {
+		log.info("Calculating bill for order with {} items", request.getItems().size());
+		BillResponse response = orderService.calculateBill(request);
 		return ResponseEntity.ok(response);
 	}
 
