@@ -293,6 +293,14 @@ public class ProductService {
 		// Override imageUrls with the product-specific images
 		response.setImageUrls(productImageUrls);
 
+		// Map variants with their specific images using the custom method
+		if (product.getVariants() != null) {
+			List<ProductVariantResponse> variantResponses = product.getVariants().stream()
+					.map(this::mapToVariantResponse)
+					.collect(Collectors.toList());
+			response.setVariants(variantResponses);
+		}
+
 		// Get active discount information
 		response.setDiscount(getActiveDiscountForProduct(product.getId()));
 
