@@ -32,6 +32,8 @@ import com.charbel.ecommerce.event.dto.UpdateEventRequest;
 import com.charbel.ecommerce.event.entity.Discount;
 import com.charbel.ecommerce.event.entity.Event;
 import com.charbel.ecommerce.event.service.EventService;
+import com.charbel.ecommerce.product.dto.ProductResponse;
+import com.charbel.ecommerce.product.service.ProductResponseMapper;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -49,6 +51,7 @@ import lombok.extern.slf4j.Slf4j;
 public class EventController {
 
 	private final EventService eventService;
+	private final ProductResponseMapper productResponseMapper;
 
 	@PostMapping(value = "/admin/events", consumes = { "multipart/form-data" })
 	@PreAuthorize("hasRole('ADMIN')")
@@ -129,7 +132,18 @@ public class EventController {
 	public ResponseEntity<AdminEventResponse> getEventByIdForAdmin(@PathVariable UUID id) {
 		try {
 			Event event = eventService.getEventByIdForAdmin(id);
-			AdminEventResponse response = AdminEventResponse.fromEntity(event);
+			
+			// Map products using the centralized mapper for complete data
+			List<ProductResponse> products = event.getProducts() != null
+				? event.getProducts().stream().map(productResponseMapper::mapToProductResponse).collect(Collectors.toList())
+				: List.of();
+			
+			// Map discounts
+			List<DiscountResponse> discounts = event.getDiscounts() != null
+				? event.getDiscounts().stream().map(DiscountResponse::fromEntity).collect(Collectors.toList())
+				: List.of();
+			
+			AdminEventResponse response = AdminEventResponse.fromEntity(event, discounts, products);
 			return ResponseEntity.ok(response);
 		} catch (EntityNotFoundException e) {
 			log.error("Event not found with id: {}", id);
@@ -151,8 +165,19 @@ public class EventController {
 			Pageable pageable = PageRequest.of(page, size);
 			Page<Event> events = eventService.getAllEventsForAdmin(pageable);
 
-			List<AdminEventResponse> eventResponses = events.getContent().stream().map(AdminEventResponse::fromEntity)
-					.collect(Collectors.toList());
+			List<AdminEventResponse> eventResponses = events.getContent().stream().map(event -> {
+				// Map products using the centralized mapper for complete data
+				List<ProductResponse> products = event.getProducts() != null
+					? event.getProducts().stream().map(productResponseMapper::mapToProductResponse).collect(Collectors.toList())
+					: List.of();
+				
+				// Map discounts
+				List<DiscountResponse> discounts = event.getDiscounts() != null
+					? event.getDiscounts().stream().map(DiscountResponse::fromEntity).collect(Collectors.toList())
+					: List.of();
+				
+				return AdminEventResponse.fromEntity(event, discounts, products);
+			}).collect(Collectors.toList());
 
 			PaginatedAdminEventsResponse response = PaginatedAdminEventsResponse.builder().events(eventResponses)
 					.currentPage(events.getNumber()).totalPages(events.getTotalPages())

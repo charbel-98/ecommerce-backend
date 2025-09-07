@@ -22,6 +22,7 @@ import com.charbel.ecommerce.cdn.service.CdnService;
 import com.charbel.ecommerce.product.dto.ProductResponse;
 import com.charbel.ecommerce.product.entity.Product;
 import com.charbel.ecommerce.product.repository.ProductRepository;
+import com.charbel.ecommerce.product.service.ProductResponseMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +35,7 @@ public class CategoryService {
 	private final CategoryRepository categoryRepository;
 	private final ProductRepository productRepository;
 	private final CdnService cdnService;
+	private final ProductResponseMapper productResponseMapper;
 
 	@Transactional
 	public CategoryResponse createCategory(CreateCategoryRequest request) {
@@ -279,7 +281,8 @@ public class CategoryService {
 		Pageable productPageable = PageRequest.of(0, 10);
 		Page<Product> productsPage = productRepository.findProductsByCategoryId(category.getId(), productPageable);
 
-		List<ProductResponse> products = productsPage.getContent().stream().map(ProductResponse::fromEntity)
+		List<ProductResponse> products = productsPage.getContent().stream()
+				.map(productResponseMapper::mapToProductResponse)
 				.collect(Collectors.toList());
 
 		return CategoryWithProductsResponse.builder().id(category.getId()).name(category.getName())

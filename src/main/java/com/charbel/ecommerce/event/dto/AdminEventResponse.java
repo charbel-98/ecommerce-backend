@@ -56,6 +56,10 @@ public class AdminEventResponse {
 				? event.getProducts().stream().map(ProductResponse::fromEntity).collect(Collectors.toList())
 				: List.of();
 
+		return fromEntity(event, discounts, products);
+	}
+
+	public static AdminEventResponse fromEntity(Event event, List<DiscountResponse> discounts, List<ProductResponse> products) {
 		// Generate discount summary for admin overview
 		String discountSummary = generateDiscountSummary(discounts);
 

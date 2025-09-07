@@ -2,8 +2,6 @@ package com.charbel.ecommerce.product.service;
 
 import com.charbel.ecommerce.product.dto.SimilarProductResponse;
 import com.charbel.ecommerce.product.entity.Product;
-import com.charbel.ecommerce.product.entity.ProductImage;
-import com.charbel.ecommerce.product.repository.ProductImageRepository;
 import com.charbel.ecommerce.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +18,7 @@ import java.util.stream.Collectors;
 public class ProductSimilarityService {
 
     private final ProductRepository productRepository;
-    private final ProductImageRepository productImageRepository;
+    private final ProductResponseMapper productResponseMapper;
 
     private static final double GENDER_WEIGHT = 0.25;
     private static final double CATEGORY_WEIGHT = 0.20;
@@ -212,35 +210,29 @@ public class ProductSimilarityService {
     }
 
     private SimilarProductResponse mapToSimilarProductResponse(Product product, Double similarityScore) {
-        // Get product images (not variant-specific)
-        List<String> productImageUrls = productImageRepository.findByProductIdAndVariantIdIsNull(product.getId())
-                .stream().map(ProductImage::getImageUrl).collect(Collectors.toList());
-
-        // Start with the base ProductResponse structure
-        SimilarProductResponse response = SimilarProductResponse.builder()
-                .id(product.getId())
-                .name(product.getName())
-                .description(product.getDescription())
-                .basePrice(product.getBasePrice())
-                .brandId(product.getBrandId())
-                .brandName(product.getBrand() != null ? product.getBrand().getName() : null)
-                .category(product.getCategory() != null ? 
-                    com.charbel.ecommerce.category.dto.CategoryResponse.fromEntity(product.getCategory()) : null)
-                .gender(product.getGender())
-                .status(product.getStatus())
-                .metadata(product.getMetadata())
-                .imageUrls(productImageUrls)
-                .variants(product.getVariants() != null
-                        ? product.getVariants().stream().map(com.charbel.ecommerce.product.dto.ProductVariantResponse::fromEntity)
-                                .collect(Collectors.toList())
-                        : null)
-                .reviewCount(product.getReviewCount())
-                .averageRating(product.getAverageRating())
-                .createdAt(product.getCreatedAt())
-                .updatedAt(product.getUpdatedAt())
+        // Get the complete product response using centralized mapper
+        com.charbel.ecommerce.product.dto.ProductResponse baseResponse = productResponseMapper.mapToProductResponse(product);
+        
+        // Create SimilarProductResponse with all fields from base response plus similarity score
+        return SimilarProductResponse.builder()
+                .id(baseResponse.getId())
+                .name(baseResponse.getName())
+                .description(baseResponse.getDescription())
+                .basePrice(baseResponse.getBasePrice())
+                .brandId(baseResponse.getBrandId())
+                .brandName(baseResponse.getBrandName())
+                .category(baseResponse.getCategory())
+                .gender(baseResponse.getGender())
+                .status(baseResponse.getStatus())
+                .metadata(baseResponse.getMetadata())
+                .imageUrls(baseResponse.getImageUrls())
+                .variants(baseResponse.getVariants())
+                .discount(baseResponse.getDiscount())
+                .reviewCount(baseResponse.getReviewCount())
+                .averageRating(baseResponse.getAverageRating())
+                .createdAt(baseResponse.getCreatedAt())
+                .updatedAt(baseResponse.getUpdatedAt())
                 .similarityScore(similarityScore)
                 .build();
-
-        return response;
     }
 }

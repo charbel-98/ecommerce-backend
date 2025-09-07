@@ -4,8 +4,6 @@ import com.charbel.ecommerce.ai.service.ColorVariantImageService;
 import com.charbel.ecommerce.category.service.CategoryService;
 import com.charbel.ecommerce.common.enums.GenderType;
 import com.charbel.ecommerce.common.enums.ProductSortType;
-import com.charbel.ecommerce.event.entity.Discount;
-import com.charbel.ecommerce.event.entity.Event;
 import com.charbel.ecommerce.product.dto.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -46,6 +43,7 @@ public class ProductService {
 	private final CategoryService categoryService;
 	private final ColorVariantImageService colorVariantImageService;
 	private final ObjectMapper objectMapper;
+	private final ProductResponseMapper productResponseMapper;
 
 	@Transactional
 	public ProductResponse createProduct(CreateProductRequest request) {
@@ -191,7 +189,7 @@ public class ProductService {
 		}
 
 		log.info("Product with AI variants created successfully with ID: {}", savedProduct.getId());
-		return mapToProductResponse(savedProduct);
+		return productResponseMapper.mapToProductResponse(savedProduct);
 	}
 
 	private List<String> extractUniqueColorsFromVariants(List<ProductVariantRequest> variants) {
@@ -282,41 +280,6 @@ public class ProductService {
 		return AddStockResponse.builder().updatedVariantsCount(results.size()).results(results).build();
 	}
 
-	private ProductResponse mapToProductResponse(Product product) {
-		// Get product images (not variant-specific)
-		List<String> productImageUrls = productImageRepository.findByProductIdAndVariantIdIsNull(product.getId())
-				.stream().map(ProductImage::getImageUrl).collect(Collectors.toList());
-
-		// Use the existing fromEntity method which handles brand and category mapping
-		ProductResponse response = ProductResponse.fromEntity(product);
-
-		// Override imageUrls with the product-specific images
-		response.setImageUrls(productImageUrls);
-
-		// Map variants with their specific images using the custom method
-		if (product.getVariants() != null) {
-			List<ProductVariantResponse> variantResponses = product.getVariants().stream()
-					.map(this::mapToVariantResponse)
-					.collect(Collectors.toList());
-			response.setVariants(variantResponses);
-		}
-
-		// Get active discount information
-		response.setDiscount(getActiveDiscountForProduct(product.getId()));
-
-		return response;
-	}
-
-	private ProductVariantResponse mapToVariantResponse(ProductVariant variant) {
-		// Get variant-specific images
-		List<String> variantImageUrls = productImageRepository.findByVariantId(variant.getId()).stream()
-				.map(ProductImage::getImageUrl).collect(Collectors.toList());
-
-		return ProductVariantResponse.builder().id(variant.getId()).sku(variant.getSku())
-				.attributes(variant.getAttributes()).price(variant.getPrice()).stock(variant.getStock())
-				.imageUrls(variantImageUrls).createdAt(variant.getCreatedAt()).updatedAt(variant.getUpdatedAt())
-				.build();
-	}
 
 	private LowStockResponse mapToLowStockResponse(ProductVariant variant) {
 		return LowStockResponse.builder().variantId(variant.getId()).sku(variant.getSku())
@@ -328,13 +291,13 @@ public class ProductService {
 	public Page<ProductResponse> getProducts(Pageable pageable) {
 		log.info("Fetching paginated products");
 		Page<Product> products = productRepository.findAllProductsWithVariants(pageable);
-		return products.map(this::mapToProductResponse);
+		return products.map(productResponseMapper::mapToProductResponse);
 	}
 
 	public Page<ProductResponse> getProductsByEventId(UUID eventId, Pageable pageable) {
 		log.info("Fetching products for event ID: {}", eventId);
 		Page<Product> products = productRepository.findProductsByEventId(eventId, pageable);
-		return products.map(this::mapToProductResponse);
+		return products.map(productResponseMapper::mapToProductResponse);
 	}
 
 	@Transactional
@@ -348,7 +311,7 @@ public class ProductService {
 		Product savedProduct = productRepository.save(product);
 
 		log.info("Product disabled successfully with ID: {}", productId);
-		return mapToProductResponse(savedProduct);
+		return productResponseMapper.mapToProductResponse(savedProduct);
 	}
 
 	@Transactional(readOnly = true)
@@ -357,7 +320,7 @@ public class ProductService {
 				pageable.getPageSize());
 
 		Page<Product> products = productRepository.findProductsByBrandSlug(brandSlug, pageable);
-		return products.map(this::mapToProductResponse);
+		return products.map(productResponseMapper::mapToProductResponse);
 	}
 
 	@Transactional(readOnly = true)
@@ -366,7 +329,7 @@ public class ProductService {
 				pageable.getPageSize());
 
 		Page<Product> products = productRepository.findProductsByCategoryId(categoryId, pageable);
-		return products.map(this::mapToProductResponse);
+		return products.map(productResponseMapper::mapToProductResponse);
 	}
 
 	@Transactional(readOnly = true)
@@ -380,7 +343,7 @@ public class ProductService {
 		} else {
 			products = productRepository.findProductsByCategoryIdWithSort(categoryId, sortType.name(), pageable);
 		}
-		return products.map(this::mapToProductResponse);
+		return products.map(productResponseMapper::mapToProductResponse);
 	}
 
 	@Transactional(readOnly = true)
@@ -409,37 +372,6 @@ public class ProductService {
 				categoryId, minPrice, maxPrice, upperColors, upperSizes, brandSlugs, sortType.name(), pageable);
 		}
 		
-		return products.map(this::mapToProductResponse);
-	}
-
-	private DiscountInfo getActiveDiscountForProduct(UUID productId) {
-		LocalDateTime now = LocalDateTime.now();
-		List<Event> activeEvents = productRepository.findActiveEventsWithDiscountsForProduct(productId, now);
-
-		if (activeEvents.isEmpty()) {
-			return null;
-		}
-
-		// Return the first active event with discounts (you might want to prioritize by discount value)
-		Event event = activeEvents.get(0);
-		Discount discount = event.getDiscounts().stream()
-			.findFirst()
-			.orElse(null);
-
-		if (discount == null) {
-			return null;
-		}
-
-		return DiscountInfo.builder()
-			.eventId(event.getId())
-			.eventName(event.getName())
-			.discountId(discount.getId())
-			.type(discount.getType())
-			.value(discount.getValue())
-			.minPurchaseAmount(discount.getMinPurchaseAmount())
-			.maxDiscountAmount(discount.getMaxDiscountAmount())
-			.eventStartDate(event.getStartDate())
-			.eventEndDate(event.getEndDate())
-			.build();
+		return products.map(productResponseMapper::mapToProductResponse);
 	}
 }
