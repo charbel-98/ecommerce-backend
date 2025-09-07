@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,8 @@ public class ProductResponse {
 	private List<String> imageUrls;
 	private List<ProductVariantResponse> variants;
 	private DiscountInfo discount;
+	private Long reviewCount;
+	private BigDecimal averageRating;
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
 

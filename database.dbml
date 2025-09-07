@@ -269,7 +269,22 @@ Enum discountType {
 }
 
 ////////////////////////////////////////////////////
-// RED — Logs
+// RED — Reviews
+ reviews {
+  id UUID [pk]
+  productId UUID [not null] // foreign key to products
+  userId UUID [not null] // foreign key to users
+  rating int [not null] // 1-5 stars
+  title varchar(100) // review headline
+  comment text // review content
+  isVerifiedPurchase boolean [not null, default: false]
+  helpfulCount int [not null, default: 0]
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+}
+
+////////////////////////////////////////////////////
+// GRAY — Logs
  audit_logs {
   id UUID [pk]
   userId UUID fk
@@ -284,9 +299,10 @@ Enum discountType {
 // RELATIONSHIPS
 ////////////////////////////////////////////////////
 
-// Users → Carts, Orders, Logs, Refresh Tokens
+// Users → Carts, Orders, Reviews, Logs, Refresh Tokens
  carts.userId > users.id
  orders.userId > users.id
+ reviews.userId > users.id
  audit_logs.userId > users.id
  refresh_tokens.userId > users.id
 
@@ -295,10 +311,11 @@ Enum discountType {
  products.categoryId > categories.id
  categories.parentId > categories.id // self-referencing for hierarchy
 
-// Products → Variants & Images
+// Products → Variants, Images & Reviews
  product_variants.productId > products.id
  product_images.productId > products.id
  product_images.variantId > product_variants.id // optional
+ reviews.productId > products.id
 
 // Cart → Cart Items → Variants
  cart_items.cartId > carts.id
@@ -373,5 +390,15 @@ Table event_products {
     (eventId, productId) [name: 'idx_event_products_composite', unique: true]
     eventId [name: 'idx_event_products_event']
     productId [name: 'idx_event_products_product']
+  }
+}
+
+Table reviews {
+  indexes {
+    productId [name: 'idx_reviews_product']
+    userId [name: 'idx_reviews_user']
+    rating [name: 'idx_reviews_rating']
+    createdAt [name: 'idx_reviews_created']
+    (userId, productId) [name: 'idx_reviews_user_product', unique: true]
   }
 }

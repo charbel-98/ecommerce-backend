@@ -4,6 +4,7 @@ import com.charbel.ecommerce.brand.entity.Brand;
 import com.charbel.ecommerce.category.entity.Category;
 import com.charbel.ecommerce.common.enums.GenderType;
 import com.charbel.ecommerce.event.entity.Event;
+import com.charbel.ecommerce.review.entity.Review;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -72,6 +73,9 @@ public class Product {
 
 	@ManyToMany(mappedBy = "products", fetch = FetchType.LAZY)
 	private Set<Event> events;
+
+	@OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	private List<Review> reviews;
 
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)

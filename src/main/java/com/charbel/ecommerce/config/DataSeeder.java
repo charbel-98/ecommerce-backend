@@ -13,6 +13,8 @@ import com.charbel.ecommerce.product.entity.Product;
 import com.charbel.ecommerce.product.entity.ProductVariant;
 import com.charbel.ecommerce.product.repository.ProductRepository;
 import com.charbel.ecommerce.product.repository.ProductVariantRepository;
+import com.charbel.ecommerce.review.entity.Review;
+import com.charbel.ecommerce.review.repository.ReviewRepository;
 import com.charbel.ecommerce.user.entity.User;
 import com.charbel.ecommerce.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +40,7 @@ public class DataSeeder implements CommandLineRunner {
 	private final ProductVariantRepository productVariantRepository;
 	private final EventRepository eventRepository;
 	private final DiscountRepository discountRepository;
+	private final ReviewRepository reviewRepository;
 	private final PasswordEncoder passwordEncoder;
 
 	@Override
@@ -49,6 +52,8 @@ public class DataSeeder implements CommandLineRunner {
 		seedProducts();
 		seedEvents();
 		seedEventProductLinks();
+		seedReviewUser();
+		seedReviews();
 	}
 
 	private void seedAdminUser() {
@@ -404,5 +409,145 @@ public class DataSeeder implements CommandLineRunner {
 		}
 
 		log.info("Successfully linked products to events");
+	}
+
+	private void seedReviewUser() {
+		String reviewUserEmail = "charbel_cg@outlook.com";
+
+		if (!userRepository.existsByEmail(reviewUserEmail)) {
+			User reviewUser = User.builder()
+					.email(reviewUserEmail)
+					.passwordHash(passwordEncoder.encode("password123"))
+					.firstName("Charbel")
+					.lastName("CG")
+					.role(User.UserRole.CUSTOMER)
+					.build();
+
+			userRepository.save(reviewUser);
+			log.info("Review user created successfully:");
+			log.info("Email: {}", reviewUserEmail);
+			log.info("Password: password123");
+		} else {
+			log.info("Review user already exists with email: {}", reviewUserEmail);
+		}
+	}
+
+	private void seedReviews() {
+		if (reviewRepository.count() > 0) {
+			log.info("Reviews already exist, skipping review seeding");
+			return;
+		}
+
+		User reviewUser = userRepository.findByEmail("charbel_cg@outlook.com").orElse(null);
+		if (reviewUser == null) {
+			log.warn("Review user not found, skipping review seeding");
+			return;
+		}
+
+		List<Product> products = productRepository.findAll();
+		if (products.isEmpty()) {
+			log.warn("No products found, skipping review seeding");
+			return;
+		}
+
+		List<Review> reviews = new ArrayList<>();
+
+		// Nike Dri-FIT T-Shirt
+		Product nikeShirt = products.stream()
+				.filter(p -> p.getName().contains("Nike Dri-FIT"))
+				.findFirst()
+				.orElse(null);
+		if (nikeShirt != null) {
+			reviews.add(Review.builder()
+					.product(nikeShirt)
+					.productId(nikeShirt.getId())
+					.user(reviewUser)
+					.userId(reviewUser.getId())
+					.rating(5)
+					.title("Excellent quality and comfort!")
+					.comment("This Nike Dri-FIT t-shirt is absolutely amazing! The fabric is incredibly soft and breathable. Perfect for workouts and casual wear. The moisture-wicking technology really works. Highly recommended!")
+					.isVerifiedPurchase(true)
+					.helpfulCount(12)
+					.build());
+		}
+
+		// Levi's 501 Jeans
+		Product levisJeans = products.stream()
+				.filter(p -> p.getName().contains("Levi's 501"))
+				.findFirst()
+				.orElse(null);
+		if (levisJeans != null) {
+			reviews.add(Review.builder()
+					.product(levisJeans)
+					.productId(levisJeans.getId())
+					.user(reviewUser)
+					.userId(reviewUser.getId())
+					.rating(4)
+					.title("Classic and durable")
+					.comment("These are the classic Levi's 501s that everyone loves. Great quality denim that will last for years. The fit is perfect and they get better with age. Only giving 4 stars because they're a bit pricey, but worth the investment.")
+					.isVerifiedPurchase(true)
+					.helpfulCount(8)
+					.build());
+		}
+
+		// Zara Floral Dress
+		Product zaraDress = products.stream()
+				.filter(p -> p.getName().contains("Zara Floral"))
+				.findFirst()
+				.orElse(null);
+		if (zaraDress != null) {
+			reviews.add(Review.builder()
+					.product(zaraDress)
+					.productId(zaraDress.getId())
+					.user(reviewUser)
+					.userId(reviewUser.getId())
+					.rating(5)
+					.title("Beautiful dress, perfect fit!")
+					.comment("This dress is gorgeous! The floral print is so elegant and the quality is excellent. Perfect for both casual and formal occasions. The fit is true to size and very flattering. Love it!")
+					.isVerifiedPurchase(true)
+					.helpfulCount(15)
+					.build());
+		}
+
+		// H&M Skinny Jeans
+		Product hmJeans = products.stream()
+				.filter(p -> p.getName().contains("H&M High Waisted"))
+				.findFirst()
+				.orElse(null);
+		if (hmJeans != null) {
+			reviews.add(Review.builder()
+					.product(hmJeans)
+					.productId(hmJeans.getId())
+					.user(reviewUser)
+					.userId(reviewUser.getId())
+					.rating(4)
+					.title("Great value for money")
+					.comment("These jeans are a great find! The high-waisted cut is very flattering and the stretch denim is comfortable. Good quality for the price point. Perfect for everyday wear.")
+					.isVerifiedPurchase(true)
+					.helpfulCount(6)
+					.build());
+		}
+
+		// Nike Air Max 90
+		Product nikeShoes = products.stream()
+				.filter(p -> p.getName().contains("Nike Air Max 90"))
+				.findFirst()
+				.orElse(null);
+		if (nikeShoes != null) {
+			reviews.add(Review.builder()
+					.product(nikeShoes)
+					.productId(nikeShoes.getId())
+					.user(reviewUser)
+					.userId(reviewUser.getId())
+					.rating(5)
+					.title("Classic sneakers never go out of style")
+					.comment("These Air Max 90s are iconic! Super comfortable with excellent cushioning. The retro design looks great with any outfit. True to size and built to last. Worth every penny!")
+					.isVerifiedPurchase(true)
+					.helpfulCount(20)
+					.build());
+		}
+
+		reviewRepository.saveAll(reviews);
+		log.info("Seeded {} reviews for user: {}", reviews.size(), reviewUser.getEmail());
 	}
 }

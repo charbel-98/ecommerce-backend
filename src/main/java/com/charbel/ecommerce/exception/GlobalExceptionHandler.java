@@ -91,6 +91,39 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
 	}
 
+	@ExceptionHandler(ReviewNotFoundException.class)
+	public ResponseEntity<ErrorResponse> handleReviewNotFound(ReviewNotFoundException ex, WebRequest request) {
+		log.warn("Review not found: {}", ex.getMessage());
+
+		ErrorResponse errorResponse = ErrorResponse.builder().status(HttpStatus.NOT_FOUND.value())
+				.error("Review Not Found").message(ex.getMessage())
+				.path(request.getDescription(false).replace("uri=", "")).timestamp(LocalDateTime.now()).build();
+
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+	}
+
+	@ExceptionHandler(DuplicateReviewException.class)
+	public ResponseEntity<ErrorResponse> handleDuplicateReview(DuplicateReviewException ex, WebRequest request) {
+		log.warn("Duplicate review: {}", ex.getMessage());
+
+		ErrorResponse errorResponse = ErrorResponse.builder().status(HttpStatus.CONFLICT.value())
+				.error("Duplicate Review").message(ex.getMessage())
+				.path(request.getDescription(false).replace("uri=", "")).timestamp(LocalDateTime.now()).build();
+
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+	}
+
+	@ExceptionHandler(UnauthorizedReviewAccessException.class)
+	public ResponseEntity<ErrorResponse> handleUnauthorizedReviewAccess(UnauthorizedReviewAccessException ex, WebRequest request) {
+		log.warn("Unauthorized review access: {}", ex.getMessage());
+
+		ErrorResponse errorResponse = ErrorResponse.builder().status(HttpStatus.FORBIDDEN.value())
+				.error("Unauthorized Access").message(ex.getMessage())
+				.path(request.getDescription(false).replace("uri=", "")).timestamp(LocalDateTime.now()).build();
+
+		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+	}
+
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex, WebRequest request) {
 		log.error("Unexpected error: ", ex);

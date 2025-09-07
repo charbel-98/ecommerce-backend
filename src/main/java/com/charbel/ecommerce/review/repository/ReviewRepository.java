@@ -1,0 +1,42 @@
+package com.charbel.ecommerce.review.repository;
+
+import com.charbel.ecommerce.review.entity.Review;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+@Repository
+public interface ReviewRepository extends JpaRepository<Review, UUID> {
+
+    Page<Review> findByProductIdOrderByCreatedAtDesc(UUID productId, Pageable pageable);
+
+    Optional<Review> findByProductIdAndUserId(UUID productId, UUID userId);
+
+    boolean existsByProductIdAndUserId(UUID productId, UUID userId);
+
+    @Query("SELECT COUNT(r) FROM Review r WHERE r.productId = :productId")
+    Long countByProductId(@Param("productId") UUID productId);
+
+    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.productId = :productId")
+    BigDecimal findAverageRatingByProductId(@Param("productId") UUID productId);
+
+    @Query("SELECT r.rating, COUNT(r) FROM Review r WHERE r.productId = :productId GROUP BY r.rating ORDER BY r.rating")
+    List<Object[]> findRatingDistributionByProductId(@Param("productId") UUID productId);
+
+    @Query("SELECT r FROM Review r WHERE r.userId = :userId ORDER BY r.createdAt DESC")
+    Page<Review> findByUserIdOrderByCreatedAtDesc(@Param("userId") UUID userId, Pageable pageable);
+
+    @Query("SELECT r FROM Review r WHERE r.productId = :productId AND r.rating = :rating ORDER BY r.createdAt DESC")
+    Page<Review> findByProductIdAndRatingOrderByCreatedAtDesc(@Param("productId") UUID productId, @Param("rating") Integer rating, Pageable pageable);
+
+    @Query("SELECT r FROM Review r WHERE r.productId = :productId ORDER BY r.helpfulCount DESC, r.createdAt DESC")
+    Page<Review> findByProductIdOrderByHelpfulCountDescAndCreatedAtDesc(@Param("productId") UUID productId, Pageable pageable);
+}

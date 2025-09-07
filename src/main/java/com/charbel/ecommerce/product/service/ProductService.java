@@ -6,6 +6,7 @@ import com.charbel.ecommerce.common.enums.GenderType;
 import com.charbel.ecommerce.event.entity.Discount;
 import com.charbel.ecommerce.event.entity.Event;
 import com.charbel.ecommerce.product.dto.*;
+import com.charbel.ecommerce.review.repository.ReviewRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
@@ -23,6 +24,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -43,6 +46,7 @@ public class ProductService {
 	private final ProductImageRepository productImageRepository;
 	private final CategoryService categoryService;
 	private final ColorVariantImageService colorVariantImageService;
+	private final ReviewRepository reviewRepository;
 	private final ObjectMapper objectMapper;
 
 	@Transactional
@@ -293,6 +297,16 @@ public class ProductService {
 
 		// Get active discount information
 		response.setDiscount(getActiveDiscountForProduct(product.getId()));
+
+		// Get review statistics
+		Long reviewCount = reviewRepository.countByProductId(product.getId());
+		BigDecimal averageRating = reviewRepository.findAverageRatingByProductId(product.getId());
+		if (averageRating != null) {
+			averageRating = averageRating.setScale(1, RoundingMode.HALF_UP);
+		}
+
+		response.setReviewCount(reviewCount);
+		response.setAverageRating(averageRating);
 
 		return response;
 	}

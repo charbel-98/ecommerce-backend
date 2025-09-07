@@ -13,4 +13,7 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
 	@Query("SELECT o FROM Order o JOIN FETCH o.user JOIN FETCH o.orderItems oi JOIN FETCH oi.variant v JOIN FETCH v.product")
 	List<Order> findAllOrdersWithDetails();
+
+	@Query("SELECT CASE WHEN COUNT(o) > 0 THEN true ELSE false END FROM Order o JOIN o.orderItems oi WHERE o.user.id = :userId AND oi.variant.product.id = :productId AND o.status = 'COMPLETED'")
+	boolean existsByUserIdAndProductId(UUID userId, UUID productId);
 }
