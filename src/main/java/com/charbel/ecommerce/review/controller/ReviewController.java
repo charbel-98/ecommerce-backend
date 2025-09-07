@@ -13,7 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -31,13 +30,13 @@ public class ReviewController {
     @PreAuthorize("hasRole('CUSTOMER') or hasRole('ADMIN')")
     public ResponseEntity<ReviewResponse> createReview(
             @PathVariable UUID productId,
-            @Valid @RequestBody CreateReviewRequest request,
-            @RequestParam(value = "images", required = false) MultipartFile[] images) {
+            @Valid @ModelAttribute CreateReviewRequest request) {
         
-        log.info("Creating review for product: {} with {} images", productId, images != null ? images.length : 0);
+        log.info("Creating review for product: {} with {} images", productId, 
+                request.getImages() != null ? request.getImages().length : 0);
         UUID userId = securityService.getCurrentUserId();
         
-        ReviewResponse response = reviewService.createReview(productId, userId, request, images);
+        ReviewResponse response = reviewService.createReview(productId, userId, request, request.getImages());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

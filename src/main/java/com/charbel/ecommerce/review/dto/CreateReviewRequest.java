@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 @Data
 @NoArgsConstructor
@@ -22,4 +23,7 @@ public class CreateReviewRequest {
 
     @Size(max = 2000, message = "Comment cannot exceed 2000 characters")
     private String comment;
+
+    @Size(max = 5, message = "Maximum 5 images allowed per review")
+    private MultipartFile[] images;
 }
