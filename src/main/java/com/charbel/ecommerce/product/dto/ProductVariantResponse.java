@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +21,7 @@ public class ProductVariantResponse {
 	private UUID id;
 	private String sku;
 	private Map<String, Object> attributes;
-	private Integer price;
+	private BigDecimal price;
 	private Integer stock;
 	private List<String> imageUrls;
 	private LocalDateTime createdAt;

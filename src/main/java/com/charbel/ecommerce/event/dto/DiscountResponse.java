@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -14,9 +15,9 @@ public class DiscountResponse {
 
 	private UUID id;
 	private Discount.DiscountType type;
-	private Integer value;
-	private Integer minPurchaseAmount;
-	private Integer maxDiscountAmount;
+	private BigDecimal value;
+	private BigDecimal minPurchaseAmount;
+	private BigDecimal maxDiscountAmount;
 
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	private LocalDateTime createdAt;

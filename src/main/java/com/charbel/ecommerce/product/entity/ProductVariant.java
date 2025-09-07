@@ -10,6 +10,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -37,8 +38,8 @@ public class ProductVariant {
 	@Column(columnDefinition = "jsonb", nullable = false)
 	private Map<String, Object> attributes;
 
-	@Column(nullable = false)
-	private Integer price;
+	@Column(nullable = false, precision = 10, scale = 2)
+	private BigDecimal price;
 
 	@Column(nullable = false)
 	@Builder.Default

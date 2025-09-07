@@ -2,13 +2,14 @@ package com.charbel.ecommerce.product.dto;
 
 import com.charbel.ecommerce.common.enums.GenderType;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -22,8 +23,8 @@ public class CreateProductRequest {
 	private String description;
 
 	@NotNull(message = "Base price is required")
-	@PositiveOrZero(message = "Base price must be zero or positive")
-	private Integer basePrice;
+	@DecimalMin(value = "0.0", message = "Base price must be zero or positive")
+	private BigDecimal basePrice;
 
 	@NotNull(message = "Brand ID is required")
 	private UUID brandId;

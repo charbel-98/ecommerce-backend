@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -75,7 +76,7 @@ public class ProductService {
 
 	@Transactional
 	public ProductResponse createProductWithAIVariants(MultipartFile image, String name, String description,
-			Integer basePrice, UUID brandId, UUID categoryId, String genderStr, String variantsJson,
+			BigDecimal basePrice, UUID brandId, UUID categoryId, String genderStr, String variantsJson,
 			String metadataJson) {
 
 		log.info("Creating product with AI-generated variants: {}", name);

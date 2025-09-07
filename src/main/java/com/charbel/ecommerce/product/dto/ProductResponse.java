@@ -25,7 +25,7 @@ public class ProductResponse {
 	private UUID id;
 	private String name;
 	private String description;
-	private Integer basePrice;
+	private BigDecimal basePrice;
 	private UUID brandId;
 	private String brandName;
 	private CategoryResponse category;

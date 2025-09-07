@@ -1,9 +1,11 @@
 package com.charbel.ecommerce.event.dto;
 
 import com.charbel.ecommerce.event.entity.Discount;
-import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+
+import java.math.BigDecimal;
 
 @Data
 public class DiscountRequest {
@@ -12,14 +14,14 @@ public class DiscountRequest {
 	private Discount.DiscountType type;
 
 	@NotNull(message = "Discount value is required")
-	@Min(value = 1, message = "Discount value must be at least 1")
-	private Integer value; // percentage (1-100) or fixed amount in cents
+	@DecimalMin(value = "0.01", message = "Discount value must be at least 0.01")
+	private BigDecimal value; // percentage (1.00-100.00) or fixed amount in dollars
 
-	@Min(value = 0, message = "Minimum purchase amount must be non-negative")
-	private Integer minPurchaseAmount; // minimum purchase required in cents
+	@DecimalMin(value = "0.0", message = "Minimum purchase amount must be non-negative")
+	private BigDecimal minPurchaseAmount; // minimum purchase required in dollars
 
-	@Min(value = 0, message = "Maximum discount amount must be non-negative")
-	private Integer maxDiscountAmount; // max discount for percentage type in cents
+	@DecimalMin(value = "0.0", message = "Maximum discount amount must be non-negative")
+	private BigDecimal maxDiscountAmount; // max discount for percentage type in dollars
 
 	public Discount toEntity() {
 		return Discount.builder().type(type).value(value).minPurchaseAmount(minPurchaseAmount)

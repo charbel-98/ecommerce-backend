@@ -204,7 +204,7 @@ public class DataSeeder implements CommandLineRunner {
 
 		// Men's Nike T-Shirt
 		Product nikeShirt = Product.builder().name("Nike Dri-FIT Classic T-Shirt")
-				.description("Comfortable cotton t-shirt with moisture-wicking technology").basePrice(2999) // $29.99
+				.description("Comfortable cotton t-shirt with moisture-wicking technology").basePrice(new BigDecimal("29.99"))
 				.brandId(nike.getId()).categoryId(mensTshirts.getId()).gender(GenderType.MEN)
 				.metadata(createProductMetadata("COTTON", "ALL_SEASON", "CASUAL", "REGULAR")).build();
 
@@ -212,67 +212,67 @@ public class DataSeeder implements CommandLineRunner {
 
 		// Create variants for Nike T-Shirt
 		List<ProductVariant> nikeShirtVariants = List.of(
-				createVariant(nikeShirt, "NIKE-SHIRT-001-S-BLK", "S", "BLACK", 2999, 25),
-				createVariant(nikeShirt, "NIKE-SHIRT-001-M-BLK", "M", "BLACK", 2999, 30),
-				createVariant(nikeShirt, "NIKE-SHIRT-001-L-BLK", "L", "BLACK", 2999, 20),
-				createVariant(nikeShirt, "NIKE-SHIRT-001-S-WHT", "S", "WHITE", 2999, 15),
-				createVariant(nikeShirt, "NIKE-SHIRT-001-M-WHT", "M", "WHITE", 2999, 25),
-				createVariant(nikeShirt, "NIKE-SHIRT-001-L-WHT", "L", "WHITE", 2999, 18));
+				createVariant(nikeShirt, "NIKE-SHIRT-001-S-BLK", "S", "BLACK", new BigDecimal("29.99"), 25),
+				createVariant(nikeShirt, "NIKE-SHIRT-001-M-BLK", "M", "BLACK", new BigDecimal("29.99"), 30),
+				createVariant(nikeShirt, "NIKE-SHIRT-001-L-BLK", "L", "BLACK", new BigDecimal("29.99"), 20),
+				createVariant(nikeShirt, "NIKE-SHIRT-001-S-WHT", "S", "WHITE", new BigDecimal("29.99"), 15),
+				createVariant(nikeShirt, "NIKE-SHIRT-001-M-WHT", "M", "WHITE", new BigDecimal("29.99"), 25),
+				createVariant(nikeShirt, "NIKE-SHIRT-001-L-WHT", "L", "WHITE", new BigDecimal("29.99"), 18));
 		productVariantRepository.saveAll(nikeShirtVariants);
 
 		// Men's Levi's Jeans
 		Product levisJeans = Product.builder().name("Levi's 501 Original Fit Jeans")
-				.description("The original blue jean. Classic straight fit with button fly").basePrice(8999) // $89.99
+				.description("The original blue jean. Classic straight fit with button fly").basePrice(new BigDecimal("89.99"))
 				.brandId(levis.getId()).categoryId(mensJeans.getId()).gender(GenderType.MEN)
 				.metadata(createProductMetadata("DENIM", "ALL_SEASON", "CASUAL", "REGULAR")).build();
 
 		productRepository.save(levisJeans);
 
 		List<ProductVariant> levisJeansVariants = List.of(
-				createVariant(levisJeans, "LEVIS-501-30-32-BLU", "30x32", "BLUE", 8999, 12),
-				createVariant(levisJeans, "LEVIS-501-32-32-BLU", "32x32", "BLUE", 8999, 15),
-				createVariant(levisJeans, "LEVIS-501-34-32-BLU", "34x32", "BLUE", 8999, 10),
-				createVariant(levisJeans, "LEVIS-501-30-32-BLK", "30x32", "BLACK", 9499, 8),
-				createVariant(levisJeans, "LEVIS-501-32-32-BLK", "32x32", "BLACK", 9499, 12));
+				createVariant(levisJeans, "LEVIS-501-30-32-BLU", "30x32", "BLUE", new BigDecimal("89.99"), 12),
+				createVariant(levisJeans, "LEVIS-501-32-32-BLU", "32x32", "BLUE", new BigDecimal("89.99"), 15),
+				createVariant(levisJeans, "LEVIS-501-34-32-BLU", "34x32", "BLUE", new BigDecimal("89.99"), 10),
+				createVariant(levisJeans, "LEVIS-501-30-32-BLK", "30x32", "BLACK", new BigDecimal("94.99"), 8),
+				createVariant(levisJeans, "LEVIS-501-32-32-BLK", "32x32", "BLACK", new BigDecimal("94.99"), 12));
 		productVariantRepository.saveAll(levisJeansVariants);
 
 		// Women's Zara Dress
 		Product zaraDress = Product.builder().name("Zara Floral Print Midi Dress")
-				.description("Elegant midi dress with floral print, perfect for any occasion").basePrice(5999) // $59.99
+				.description("Elegant midi dress with floral print, perfect for any occasion").basePrice(new BigDecimal("59.99"))
 				.brandId(zara.getId()).categoryId(womensDresses.getId()).gender(GenderType.WOMEN)
 				.metadata(createProductMetadata("POLYESTER", "SPRING", "FORMAL", "REGULAR")).build();
 
 		productRepository.save(zaraDress);
 
 		List<ProductVariant> zaraDressVariants = List.of(
-				createVariant(zaraDress, "ZARA-DRESS-001-XS-PNK", "XS", "PINK", 5999, 8),
-				createVariant(zaraDress, "ZARA-DRESS-001-S-PNK", "S", "PINK", 5999, 12),
-				createVariant(zaraDress, "ZARA-DRESS-001-M-PNK", "M", "PINK", 5999, 15),
-				createVariant(zaraDress, "ZARA-DRESS-001-L-PNK", "L", "PINK", 5999, 10),
-				createVariant(zaraDress, "ZARA-DRESS-001-S-BLU", "S", "BLUE", 5999, 6),
-				createVariant(zaraDress, "ZARA-DRESS-001-M-BLU", "M", "BLUE", 5999, 8));
+				createVariant(zaraDress, "ZARA-DRESS-001-XS-PNK", "XS", "PINK", new BigDecimal("59.99"), 8),
+				createVariant(zaraDress, "ZARA-DRESS-001-S-PNK", "S", "PINK", new BigDecimal("59.99"), 12),
+				createVariant(zaraDress, "ZARA-DRESS-001-M-PNK", "M", "PINK", new BigDecimal("59.99"), 15),
+				createVariant(zaraDress, "ZARA-DRESS-001-L-PNK", "L", "PINK", new BigDecimal("59.99"), 10),
+				createVariant(zaraDress, "ZARA-DRESS-001-S-BLU", "S", "BLUE", new BigDecimal("59.99"), 6),
+				createVariant(zaraDress, "ZARA-DRESS-001-M-BLU", "M", "BLUE", new BigDecimal("59.99"), 8));
 		productVariantRepository.saveAll(zaraDressVariants);
 
 		// Women's H&M Jeans
 		Product hmJeans = Product.builder().name("H&M High Waisted Skinny Jeans")
-				.description("Trendy high-waisted skinny fit jeans in stretch denim").basePrice(3999) // $39.99
+				.description("Trendy high-waisted skinny fit jeans in stretch denim").basePrice(new BigDecimal("39.99"))
 				.brandId(hm.getId()).categoryId(womensJeans.getId()).gender(GenderType.WOMEN)
 				.metadata(createProductMetadata("DENIM", "ALL_SEASON", "CASUAL", "SLIM")).build();
 
 		productRepository.save(hmJeans);
 
 		List<ProductVariant> hmJeansVariants = List.of(
-				createVariant(hmJeans, "HM-JEANS-001-25-BLU", "25", "BLUE", 3999, 20),
-				createVariant(hmJeans, "HM-JEANS-001-26-BLU", "26", "BLUE", 3999, 25),
-				createVariant(hmJeans, "HM-JEANS-001-27-BLU", "27", "BLUE", 3999, 18),
-				createVariant(hmJeans, "HM-JEANS-001-28-BLU", "28", "BLUE", 3999, 22),
-				createVariant(hmJeans, "HM-JEANS-001-25-BLK", "25", "BLACK", 3999, 15),
-				createVariant(hmJeans, "HM-JEANS-001-26-BLK", "26", "BLACK", 3999, 18));
+				createVariant(hmJeans, "HM-JEANS-001-25-BLU", "25", "BLUE", new BigDecimal("39.99"), 20),
+				createVariant(hmJeans, "HM-JEANS-001-26-BLU", "26", "BLUE", new BigDecimal("39.99"), 25),
+				createVariant(hmJeans, "HM-JEANS-001-27-BLU", "27", "BLUE", new BigDecimal("39.99"), 18),
+				createVariant(hmJeans, "HM-JEANS-001-28-BLU", "28", "BLUE", new BigDecimal("39.99"), 22),
+				createVariant(hmJeans, "HM-JEANS-001-25-BLK", "25", "BLACK", new BigDecimal("39.99"), 15),
+				createVariant(hmJeans, "HM-JEANS-001-26-BLK", "26", "BLACK", new BigDecimal("39.99"), 18));
 		productVariantRepository.saveAll(hmJeansVariants);
 
 		// Unisex Nike Sneakers
 		Product nikeShoes = Product.builder().name("Nike Air Max 90")
-				.description("Classic sneakers with visible Air cushioning and retro appeal").basePrice(11999) // $119.99
+				.description("Classic sneakers with visible Air cushioning and retro appeal").basePrice(new BigDecimal("119.99"))
 				.brandId(nike.getId()).categoryId(womensShoes.getId()) // Using women's shoes category but it's unisex
 				.gender(GenderType.UNISEX).metadata(createProductMetadata("LEATHER", "ALL_SEASON", "CASUAL", "REGULAR"))
 				.build();
@@ -280,12 +280,12 @@ public class DataSeeder implements CommandLineRunner {
 		productRepository.save(nikeShoes);
 
 		List<ProductVariant> nikeShoesVariants = List.of(
-				createVariant(nikeShoes, "NIKE-AM90-001-8-WHT", "8", "WHITE", 11999, 12),
-				createVariant(nikeShoes, "NIKE-AM90-001-9-WHT", "9", "WHITE", 11999, 15),
-				createVariant(nikeShoes, "NIKE-AM90-001-10-WHT", "10", "WHITE", 11999, 18),
-				createVariant(nikeShoes, "NIKE-AM90-001-8-BLK", "8", "BLACK", 11999, 10),
-				createVariant(nikeShoes, "NIKE-AM90-001-9-BLK", "9", "BLACK", 11999, 14),
-				createVariant(nikeShoes, "NIKE-AM90-001-10-BLK", "10", "BLACK", 11999, 16));
+				createVariant(nikeShoes, "NIKE-AM90-001-8-WHT", "8", "WHITE", new BigDecimal("119.99"), 12),
+				createVariant(nikeShoes, "NIKE-AM90-001-9-WHT", "9", "WHITE", new BigDecimal("119.99"), 15),
+				createVariant(nikeShoes, "NIKE-AM90-001-10-WHT", "10", "WHITE", new BigDecimal("119.99"), 18),
+				createVariant(nikeShoes, "NIKE-AM90-001-8-BLK", "8", "BLACK", new BigDecimal("119.99"), 10),
+				createVariant(nikeShoes, "NIKE-AM90-001-9-BLK", "9", "BLACK", new BigDecimal("119.99"), 14),
+				createVariant(nikeShoes, "NIKE-AM90-001-10-BLK", "10", "BLACK", new BigDecimal("119.99"), 16));
 		productVariantRepository.saveAll(nikeShoesVariants);
 
 		log.info("Seeded {} products with variants", 5);
@@ -301,7 +301,7 @@ public class DataSeeder implements CommandLineRunner {
 		return metadata;
 	}
 
-	private ProductVariant createVariant(Product product, String sku, String size, String color, Integer price,
+	private ProductVariant createVariant(Product product, String sku, String size, String color, BigDecimal price,
 			Integer stock) {
 		Map<String, Object> attributes = new HashMap<>();
 		attributes.put("size", size);
@@ -332,9 +332,9 @@ public class DataSeeder implements CommandLineRunner {
 
 		// Create discount for Fashion Sale
 		Discount fashionSaleDiscount = Discount.builder().eventId(fashionSaleEvent.getId())
-				.type(Discount.DiscountType.PERCENTAGE).value(25) // 25% off
-				.minPurchaseAmount(5000) // $50 minimum
-				.maxDiscountAmount(5000) // Max $50 discount
+				.type(Discount.DiscountType.PERCENTAGE).value(new BigDecimal("25.00")) // 25% off
+				.minPurchaseAmount(new BigDecimal("50.00")) // $50 minimum
+				.maxDiscountAmount(new BigDecimal("50.00")) // Max $50 discount
 				.build();
 
 		discountRepository.save(fashionSaleDiscount);

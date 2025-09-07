@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -34,14 +36,14 @@ public class Discount {
 	@Column(nullable = false)
 	private DiscountType type;
 
-	@Column(nullable = false)
-	private Integer value; // percentage (0-100) or fixed amount in cents
+	@Column(nullable = false, precision = 10, scale = 2)
+	private BigDecimal value; // percentage (25.00 for 25%) for PERCENTAGE type, or amount in dollars for FIXED_AMOUNT type
 
-	@Column(name = "min_purchase_amount")
-	private Integer minPurchaseAmount; // minimum purchase required in cents
+	@Column(name = "min_purchase_amount", precision = 10, scale = 2)
+	private BigDecimal minPurchaseAmount; // minimum purchase required in dollars
 
-	@Column(name = "max_discount_amount")
-	private Integer maxDiscountAmount; // max discount for percentage type in cents
+	@Column(name = "max_discount_amount", precision = 10, scale = 2)
+	private BigDecimal maxDiscountAmount; // max discount for percentage type in dollars
 
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
@@ -55,21 +57,23 @@ public class Discount {
 		PERCENTAGE, FIXED_AMOUNT
 	}
 
-	public int calculateDiscountAmount(int totalAmount) {
-		if (minPurchaseAmount != null && totalAmount < minPurchaseAmount) {
-			return 0;
+	public BigDecimal calculateDiscountAmount(BigDecimal totalAmount) {
+		if (minPurchaseAmount != null && totalAmount.compareTo(minPurchaseAmount) < 0) {
+			return BigDecimal.ZERO;
 		}
 
-		int discountAmount;
+		BigDecimal discountAmount;
 		if (type == DiscountType.PERCENTAGE) {
-			discountAmount = (totalAmount * value) / 100;
-			if (maxDiscountAmount != null && discountAmount > maxDiscountAmount) {
+			// For percentage, value represents the percentage (e.g., 25.00 for 25%)
+			discountAmount = totalAmount.multiply(value).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+			if (maxDiscountAmount != null && discountAmount.compareTo(maxDiscountAmount) > 0) {
 				discountAmount = maxDiscountAmount;
 			}
 		} else {
+			// For fixed amount, value is the discount amount in dollars
 			discountAmount = value;
 		}
 
-		return Math.min(discountAmount, totalAmount);
+		return discountAmount.min(totalAmount);
 	}
 }

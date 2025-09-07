@@ -39,8 +39,8 @@ public class Product {
 	@Column(columnDefinition = "TEXT")
 	private String description;
 
-	@Column(name = "base_price", nullable = false)
-	private Integer basePrice;
+	@Column(name = "base_price", nullable = false, precision = 10, scale = 2)
+	private BigDecimal basePrice;
 
 	@Column(name = "brand_id", nullable = false)
 	private UUID brandId;
