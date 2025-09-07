@@ -294,7 +294,7 @@ public class ReviewService {
         Review savedReview = reviewRepository.save(review);
 
         log.info("Review helpful count updated to: {}", savedReview.getHelpfulCount());
-        return ReviewResponse.fromEntity(savedReview, true); // User just voted, so hasUserVoted = true
+        return ReviewResponse.fromEntity(savedReview, true); // User just voted, so wasHelpfulToCurrentUser = true
     }
 
     @Transactional
