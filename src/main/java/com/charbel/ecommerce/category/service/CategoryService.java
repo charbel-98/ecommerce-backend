@@ -239,6 +239,41 @@ public class CategoryService {
 				.build();
 	}
 
+	@Transactional(readOnly = true)
+	public CategoryResponse getCategorySubtree(UUID categoryId) {
+		log.info("Fetching category subtree for ID: {}", categoryId);
+		Category category = categoryRepository.findById(categoryId)
+				.orElseThrow(() -> new IllegalArgumentException("Category with ID '" + categoryId + "' not found"));
+		return mapToCategoryResponseWithChildren(category);
+	}
+
+	private CategoryResponse mapToCategoryResponseWithChildren(Category category) {
+		CategoryResponse response = CategoryResponse.builder()
+				.id(category.getId())
+				.name(category.getName())
+				.slug(category.getSlug())
+				.description(category.getDescription())
+				.imageUrl(category.getImageUrl())
+				.parentId(category.getParentId())
+				.level(category.getLevel())
+				.sortOrder(category.getSortOrder())
+				.isActive(category.getIsActive())
+				.createdAt(category.getCreatedAt())
+				.updatedAt(category.getUpdatedAt())
+				.build();
+
+		// Recursively fetch and map children
+		List<Category> children = categoryRepository.findByParentId(category.getId());
+		if (!children.isEmpty()) {
+			List<CategoryResponse> childResponses = children.stream()
+					.map(this::mapToCategoryResponseWithChildren)
+					.collect(Collectors.toList());
+			response.setChildren(childResponses);
+		}
+
+		return response;
+	}
+
 	private CategoryWithProductsResponse mapToCategoryWithProducts(Category category) {
 		// Get up to 10 products for this category
 		Pageable productPageable = PageRequest.of(0, 10);

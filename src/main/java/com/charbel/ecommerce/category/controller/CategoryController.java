@@ -80,4 +80,11 @@ public class CategoryController {
 		PaginatedCategoriesResponse response = categoryService.getLeafCategoriesWithProducts(page, size);
 		return ResponseEntity.ok(response);
 	}
+
+	@GetMapping("/categories/{id}/subtree")
+	public ResponseEntity<CategoryResponse> getCategorySubtree(@PathVariable UUID id) {
+		log.info("Fetching category subtree for ID: {}", id);
+		CategoryResponse subtree = categoryService.getCategorySubtree(id);
+		return ResponseEntity.ok(subtree);
+	}
 }
