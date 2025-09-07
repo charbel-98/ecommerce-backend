@@ -53,7 +53,17 @@ public class ReviewController {
                 productId, page, size, rating, sortBy);
         
         Pageable pageable = PageRequest.of(page, size);
-        PaginatedReviewsResponse response = reviewService.getProductReviews(productId, pageable, rating, sortBy);
+        
+        // Try to get current user ID if authenticated, but don't require authentication
+        UUID currentUserId = null;
+        try {
+            currentUserId = securityService.getCurrentUserId();
+        } catch (Exception e) {
+            // User is not authenticated, which is fine for public review endpoint
+            log.debug("No authenticated user found for review fetch");
+        }
+        
+        PaginatedReviewsResponse response = reviewService.getProductReviews(productId, pageable, rating, sortBy, currentUserId);
         return ResponseEntity.ok(response);
     }
 
@@ -102,8 +112,9 @@ public class ReviewController {
     @PreAuthorize("hasRole('CUSTOMER') or hasRole('ADMIN')")
     public ResponseEntity<ReviewResponse> markReviewHelpful(@PathVariable UUID reviewId) {
         log.info("Marking review as helpful: {}", reviewId);
+        UUID userId = securityService.getCurrentUserId();
         
-        ReviewResponse response = reviewService.markReviewHelpful(reviewId);
+        ReviewResponse response = reviewService.markReviewHelpful(reviewId, userId);
         return ResponseEntity.ok(response);
     }
 

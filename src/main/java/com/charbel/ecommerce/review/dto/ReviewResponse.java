@@ -27,6 +27,7 @@ public class ReviewResponse {
     private String comment;
     private Boolean isVerifiedPurchase;
     private Integer helpfulCount;
+    private Boolean hasUserVoted;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<ReviewImageResponse> images;
@@ -50,6 +51,33 @@ public class ReviewResponse {
                 .comment(review.getComment())
                 .isVerifiedPurchase(review.getIsVerifiedPurchase())
                 .helpfulCount(review.getHelpfulCount())
+                .hasUserVoted(false) // Default to false when current user context is unknown
+                .createdAt(review.getCreatedAt())
+                .updatedAt(review.getUpdatedAt())
+                .images(imageResponses)
+                .build();
+    }
+
+    public static ReviewResponse fromEntity(Review review, boolean hasUserVoted) {
+        List<ReviewImageResponse> imageResponses = null;
+        if (review.getImages() != null) {
+            imageResponses = review.getImages().stream()
+                    .map(ReviewImageResponse::fromEntity)
+                    .collect(Collectors.toList());
+        }
+
+        return ReviewResponse.builder()
+                .id(review.getId())
+                .productId(review.getProductId())
+                .userId(review.getUserId())
+                .userFirstName(review.getUser() != null ? review.getUser().getFirstName() : null)
+                .userLastName(review.getUser() != null ? review.getUser().getLastName() : null)
+                .rating(review.getRating())
+                .title(review.getTitle())
+                .comment(review.getComment())
+                .isVerifiedPurchase(review.getIsVerifiedPurchase())
+                .helpfulCount(review.getHelpfulCount())
+                .hasUserVoted(hasUserVoted)
                 .createdAt(review.getCreatedAt())
                 .updatedAt(review.getUpdatedAt())
                 .images(imageResponses)

@@ -124,6 +124,17 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
 	}
 
+	@ExceptionHandler(DuplicateHelpfulVoteException.class)
+	public ResponseEntity<ErrorResponse> handleDuplicateHelpfulVote(DuplicateHelpfulVoteException ex, WebRequest request) {
+		log.warn("Duplicate helpful vote: {}", ex.getMessage());
+
+		ErrorResponse errorResponse = ErrorResponse.builder().status(HttpStatus.CONFLICT.value())
+				.error("Duplicate Helpful Vote").message(ex.getMessage())
+				.path(request.getDescription(false).replace("uri=", "")).timestamp(LocalDateTime.now()).build();
+
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+	}
+
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex, WebRequest request) {
 		log.error("Unexpected error: ", ex);

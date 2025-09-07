@@ -1,6 +1,7 @@
 package com.charbel.ecommerce.review.service;
 
 import com.charbel.ecommerce.exception.DuplicateReviewException;
+import com.charbel.ecommerce.exception.DuplicateHelpfulVoteException;
 import com.charbel.ecommerce.exception.ReviewNotFoundException;
 import com.charbel.ecommerce.exception.UnauthorizedReviewAccessException;
 import com.charbel.ecommerce.orders.repository.OrderRepository;
@@ -9,8 +10,10 @@ import com.charbel.ecommerce.product.repository.ProductRepository;
 import com.charbel.ecommerce.review.dto.*;
 import com.charbel.ecommerce.review.entity.Review;
 import com.charbel.ecommerce.review.entity.ReviewImage;
+import com.charbel.ecommerce.review.entity.ReviewHelpfulVote;
 import com.charbel.ecommerce.review.repository.ReviewRepository;
 import com.charbel.ecommerce.review.repository.ReviewImageRepository;
+import com.charbel.ecommerce.review.repository.ReviewHelpfulVoteRepository;
 import com.charbel.ecommerce.user.entity.User;
 import com.charbel.ecommerce.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -37,6 +40,7 @@ public class ReviewService {
 
     private final ReviewRepository reviewRepository;
     private final ReviewImageRepository reviewImageRepository;
+    private final ReviewHelpfulVoteRepository reviewHelpfulVoteRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
@@ -141,6 +145,10 @@ public class ReviewService {
             }
         }
 
+        // Delete helpful votes for this review
+        reviewHelpfulVoteRepository.deleteByReviewId(reviewId);
+        log.debug("Deleted helpful votes for review: {}", reviewId);
+
         reviewRepository.delete(review);
         log.info("Review deleted successfully: {}", reviewId);
 
@@ -150,7 +158,12 @@ public class ReviewService {
 
     @Transactional(readOnly = true)
     public PaginatedReviewsResponse getProductReviews(UUID productId, Pageable pageable, Integer rating, String sortBy) {
-        log.info("Fetching reviews for product: {} with rating filter: {}", productId, rating);
+        return getProductReviews(productId, pageable, rating, sortBy, null);
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedReviewsResponse getProductReviews(UUID productId, Pageable pageable, Integer rating, String sortBy, UUID currentUserId) {
+        log.info("Fetching reviews for product: {} with rating filter: {} for user: {}", productId, rating, currentUserId);
 
         if (!productRepository.existsById(productId)) {
             throw new EntityNotFoundException("Product not found with ID: " + productId);
@@ -166,9 +179,29 @@ public class ReviewService {
             reviewPage = reviewRepository.findByProductIdOrderByCreatedAtDesc(productId, pageable);
         }
 
-        List<ReviewResponse> reviews = reviewPage.getContent().stream()
-                .map(ReviewResponse::fromEntity)
-                .collect(Collectors.toList());
+        List<ReviewResponse> reviews;
+        if (currentUserId != null) {
+            // Get all review IDs to check vote status
+            List<UUID> reviewIds = reviewPage.getContent().stream()
+                    .map(Review::getId)
+                    .collect(Collectors.toList());
+            
+            // Check which reviews the current user has voted for
+            Set<UUID> votedReviewIds = new HashSet<>();
+            for (UUID reviewId : reviewIds) {
+                if (reviewHelpfulVoteRepository.existsByReviewIdAndUserId(reviewId, currentUserId)) {
+                    votedReviewIds.add(reviewId);
+                }
+            }
+
+            reviews = reviewPage.getContent().stream()
+                    .map(review -> ReviewResponse.fromEntity(review, votedReviewIds.contains(review.getId())))
+                    .collect(Collectors.toList());
+        } else {
+            reviews = reviewPage.getContent().stream()
+                    .map(ReviewResponse::fromEntity)
+                    .collect(Collectors.toList());
+        }
 
         ReviewSummaryResponse summary = getReviewSummary(productId);
 
@@ -232,17 +265,36 @@ public class ReviewService {
     }
 
     @Transactional
-    public ReviewResponse markReviewHelpful(UUID reviewId) {
-        log.info("Marking review as helpful: {}", reviewId);
+    public ReviewResponse markReviewHelpful(UUID reviewId, UUID userId) {
+        log.info("Marking review as helpful: {} by user: {}", reviewId, userId);
 
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ReviewNotFoundException("Review not found with ID: " + reviewId));
 
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
+
+        // Check if user has already voted for this review
+        if (reviewHelpfulVoteRepository.existsByReviewIdAndUserId(reviewId, userId)) {
+            throw new DuplicateHelpfulVoteException("You have already marked this review as helpful");
+        }
+
+        // Create the helpful vote record
+        ReviewHelpfulVote helpfulVote = ReviewHelpfulVote.builder()
+                .review(review)
+                .reviewId(reviewId)
+                .user(user)
+                .userId(userId)
+                .build();
+
+        reviewHelpfulVoteRepository.save(helpfulVote);
+
+        // Increment the helpful count
         review.setHelpfulCount(review.getHelpfulCount() + 1);
         Review savedReview = reviewRepository.save(review);
 
         log.info("Review helpful count updated to: {}", savedReview.getHelpfulCount());
-        return ReviewResponse.fromEntity(savedReview);
+        return ReviewResponse.fromEntity(savedReview, true); // User just voted, so hasUserVoted = true
     }
 
     @Transactional

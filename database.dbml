@@ -295,6 +295,13 @@ Enum discountType {
   updatedAt datetime [not null]
 }
 
+ review_helpful_votes {
+  id UUID [pk]
+  reviewId UUID [not null] // foreign key to reviews
+  userId UUID [not null] // foreign key to users
+  createdAt datetime [not null]
+}
+
 ////////////////////////////////////////////////////
 // GRAY — Logs
  audit_logs {
@@ -329,8 +336,10 @@ Enum discountType {
  product_images.variantId > product_variants.id // optional
  reviews.productId > products.id
 
-// Reviews → Review Images
+// Reviews → Review Images & Helpful Votes
  review_images.reviewId > reviews.id
+ review_helpful_votes.reviewId > reviews.id
+ review_helpful_votes.userId > users.id
 
 // Cart → Cart Items → Variants
  cart_items.cartId > carts.id
@@ -424,5 +433,13 @@ Table review_images {
   indexes {
     reviewId [name: 'idx_review_images_review']
     (reviewId, sortOrder) [name: 'idx_review_images_sort']
+  }
+}
+
+Table review_helpful_votes {
+  indexes {
+    reviewId [name: 'idx_review_helpful_votes_review']
+    userId [name: 'idx_review_helpful_votes_user']
+    (reviewId, userId) [name: 'idx_review_helpful_votes_unique', unique: true]
   }
 }
