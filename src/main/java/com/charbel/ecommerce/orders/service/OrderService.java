@@ -75,7 +75,7 @@ public class OrderService {
 			));
 		
 		// Calculate original total
-		Integer originalTotalCents = 0;
+		BigDecimal originalTotal = BigDecimal.ZERO;
 		for (ProductVariant variant : variants) {
 			Integer requestedQuantity = variantQuantityMap.get(variant.getId());
 			
@@ -86,27 +86,26 @@ public class OrderService {
 				);
 			}
 			
-			// Convert price to cents for storage
-			Integer unitPriceCents = variant.getPrice().multiply(BigDecimal.valueOf(100)).intValue();
-			originalTotalCents += unitPriceCents * requestedQuantity;
+			BigDecimal itemTotal = variant.getPrice().multiply(BigDecimal.valueOf(requestedQuantity));
+			originalTotal = originalTotal.add(itemTotal);
 		}
 		
 		// Calculate discounts
 		Map<UUID, Discount> productDiscountMap = findApplicableDiscounts(variants);
-		Integer discountAmountCents = calculateTotalDiscount(variants, variantQuantityMap, productDiscountMap, originalTotalCents);
+		BigDecimal discountAmount = calculateOrderDiscounts(variants, variantQuantityMap, productDiscountMap);
 		
-		// Add delivery fee (500 cents = $5.00)
-		Integer deliveryFeeCents = 500;
-		Integer finalTotalCents = originalTotalCents - discountAmountCents + deliveryFeeCents;
+		// Add delivery fee
+		BigDecimal deliveryFee = new BigDecimal("5.00");
+		BigDecimal finalTotal = originalTotal.subtract(discountAmount).add(deliveryFee);
 		
 		// Create order
 		Order order = Order.builder()
 			.user(currentUser)
 			.address(address)
-			.originalAmount(originalTotalCents)
-			.discountAmount(discountAmountCents)
-			.deliveryFee(deliveryFeeCents)
-			.totalAmount(finalTotalCents)
+			.originalAmount(originalTotal)
+			.discountAmount(discountAmount)
+			.deliveryFee(deliveryFee)
+			.totalAmount(finalTotal)
 			.status(Order.OrderStatus.PENDING)
 			.build();
 		
@@ -115,22 +114,22 @@ public class OrderService {
 		// Create order items and update stock
 		for (ProductVariant variant : variants) {
 			Integer requestedQuantity = variantQuantityMap.get(variant.getId());
-			Integer unitPriceCents = variant.getPrice().multiply(BigDecimal.valueOf(100)).intValue();
+			BigDecimal unitPrice = variant.getPrice();
 			
 			// Apply discount to unit price if applicable
 			if (productDiscountMap.containsKey(variant.getProduct().getId())) {
 				Discount discount = productDiscountMap.get(variant.getProduct().getId());
-				BigDecimal itemTotal = BigDecimal.valueOf(unitPriceCents * requestedQuantity);
-				BigDecimal itemDiscountAmount = discount.calculateDiscountAmount(itemTotal.divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP));
-				Integer itemDiscountCents = itemDiscountAmount.multiply(BigDecimal.valueOf(100)).intValue();
-				unitPriceCents = (unitPriceCents * requestedQuantity - itemDiscountCents) / requestedQuantity;
+				BigDecimal itemTotal = unitPrice.multiply(BigDecimal.valueOf(requestedQuantity));
+				BigDecimal itemDiscountAmount = discount.calculateDiscountAmount(itemTotal);
+				BigDecimal discountedTotal = itemTotal.subtract(itemDiscountAmount);
+				unitPrice = discountedTotal.divide(BigDecimal.valueOf(requestedQuantity), 2, RoundingMode.HALF_UP);
 			}
 			
 			OrderItem orderItem = OrderItem.builder()
 				.order(savedOrder)
 				.variant(variant)
 				.quantity(requestedQuantity)
-				.unitPrice(unitPriceCents)
+				.unitPrice(unitPrice)
 				.build();
 			
 			orderItems.add(orderItem);
@@ -143,7 +142,7 @@ public class OrderService {
 		savedOrder.setOrderItems(orderItems);
 		
 		log.info("Created order {} for user {} with total amount {}", 
-			savedOrder.getId(), currentUser.getId(), finalTotalCents);
+			savedOrder.getId(), currentUser.getId(), finalTotal);
 		
 		return mapToCreateOrderResponse(savedOrder);
 	}
@@ -301,25 +300,23 @@ public class OrderService {
 		return productDiscountMap;
 	}
 
-	private Integer calculateTotalDiscount(List<ProductVariant> variants, 
-										   Map<UUID, Integer> variantQuantityMap,
-										   Map<UUID, Discount> productDiscountMap,
-										   Integer originalTotalCents) {
-		Integer totalDiscountCents = 0;
+	private BigDecimal calculateOrderDiscounts(List<ProductVariant> variants, 
+											   Map<UUID, Integer> variantQuantityMap,
+											   Map<UUID, Discount> productDiscountMap) {
+		BigDecimal totalDiscountAmount = BigDecimal.ZERO;
 		
 		for (ProductVariant variant : variants) {
 			if (productDiscountMap.containsKey(variant.getProduct().getId())) {
 				Integer requestedQuantity = variantQuantityMap.get(variant.getId());
-				Integer unitPriceCents = variant.getPrice().multiply(BigDecimal.valueOf(100)).intValue();
-				BigDecimal itemTotal = BigDecimal.valueOf(unitPriceCents * requestedQuantity).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+				BigDecimal itemTotal = variant.getPrice().multiply(BigDecimal.valueOf(requestedQuantity));
 				
 				Discount discount = productDiscountMap.get(variant.getProduct().getId());
 				BigDecimal itemDiscountAmount = discount.calculateDiscountAmount(itemTotal);
-				totalDiscountCents += itemDiscountAmount.multiply(BigDecimal.valueOf(100)).intValue();
+				totalDiscountAmount = totalDiscountAmount.add(itemDiscountAmount);
 			}
 		}
 		
-		return totalDiscountCents;
+		return totalDiscountAmount;
 	}
 
 	private CreateOrderResponse mapToCreateOrderResponse(Order order) {
@@ -353,10 +350,11 @@ public class OrderService {
 	}
 
 	private OrderItemResponse mapToOrderItemResponse(OrderItem orderItem) {
+		BigDecimal totalPrice = orderItem.getUnitPrice().multiply(BigDecimal.valueOf(orderItem.getQuantity()));
 		return OrderItemResponse.builder().id(orderItem.getId()).variantId(orderItem.getVariant().getId())
 				.sku(orderItem.getVariant().getSku()).attributes(orderItem.getVariant().getAttributes())
 				.productName(orderItem.getVariant().getProduct().getName()).quantity(orderItem.getQuantity())
-				.unitPrice(orderItem.getUnitPrice()).totalPrice(orderItem.getQuantity() * orderItem.getUnitPrice())
+				.unitPrice(orderItem.getUnitPrice()).totalPrice(totalPrice)
 				.build();
 	}
 }

@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.UUID;
 
@@ -20,6 +21,6 @@ public class OrderItemResponse {
 	private Map<String, Object> attributes;
 	private String productName;
 	private Integer quantity;
-	private Integer unitPrice;
-	private Integer totalPrice;
+	private BigDecimal unitPrice;
+	private BigDecimal totalPrice;
 }

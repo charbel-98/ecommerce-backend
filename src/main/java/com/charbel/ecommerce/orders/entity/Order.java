@@ -35,19 +35,19 @@ public class Order {
 	@JoinColumn(name = "address_id", nullable = false)
 	private Address address;
 
-	@Column(name = "total_amount", nullable = false)
-	private Integer totalAmount;
+	@Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
+	private BigDecimal totalAmount;
 
-	@Column(name = "original_amount", nullable = false)
-	private Integer originalAmount;
+	@Column(name = "original_amount", nullable = false, precision = 10, scale = 2)
+	private BigDecimal originalAmount;
 
-	@Column(name = "discount_amount", nullable = false)
+	@Column(name = "discount_amount", nullable = false, precision = 10, scale = 2)
 	@Builder.Default
-	private Integer discountAmount = 0;
+	private BigDecimal discountAmount = BigDecimal.ZERO;
 
-	@Column(name = "delivery_fee", nullable = false)
+	@Column(name = "delivery_fee", nullable = true, precision = 10, scale = 2)
 	@Builder.Default
-	private Integer deliveryFee = 500;
+	private BigDecimal deliveryFee = new BigDecimal("5.00");
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)

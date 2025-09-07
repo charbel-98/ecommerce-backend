@@ -19,6 +19,9 @@ import com.charbel.ecommerce.user.entity.User;
 import com.charbel.ecommerce.user.repository.UserRepository;
 import com.charbel.ecommerce.address.entity.Address;
 import com.charbel.ecommerce.address.repository.AddressRepository;
+import com.charbel.ecommerce.orders.entity.Order;
+import com.charbel.ecommerce.orders.entity.OrderItem;
+import com.charbel.ecommerce.orders.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -46,6 +49,7 @@ public class DataSeeder implements CommandLineRunner {
 	private final DiscountRepository discountRepository;
 	private final ReviewRepository reviewRepository;
 	private final AddressRepository addressRepository;
+	private final OrderRepository orderRepository;
 	private final PasswordEncoder passwordEncoder;
 
 	@Override
@@ -60,6 +64,7 @@ public class DataSeeder implements CommandLineRunner {
 		seedReviewUser();
 		seedReviews();
 		seedAddresses();
+		migrateOrderDeliveryFees();
 	}
 
 	private void seedAdminUser() {
@@ -655,5 +660,42 @@ public class DataSeeder implements CommandLineRunner {
 
 		addressRepository.saveAll(addresses);
 		log.info("Seeded {} addresses for user: {}", addresses.size(), charbelUser.getEmail());
+	}
+
+	private void migrateOrderDeliveryFees() {
+		log.info("Migrating existing orders to add delivery fees and fix order items...");
+		
+		List<Order> ordersWithoutDeliveryFee = orderRepository.findAll().stream()
+			.filter(order -> order.getDeliveryFee() == null)
+			.collect(Collectors.toList());
+		
+		if (ordersWithoutDeliveryFee.isEmpty()) {
+			log.info("All orders already have delivery fees, skipping migration");
+			return;
+		}
+		
+		for (Order order : ordersWithoutDeliveryFee) {
+			BigDecimal deliveryFee = new BigDecimal("5.00");
+			order.setDeliveryFee(deliveryFee);
+			
+			// Recalculate total amount with delivery fee
+			BigDecimal newTotal = order.getOriginalAmount().subtract(order.getDiscountAmount()).add(deliveryFee);
+			order.setTotalAmount(newTotal);
+			
+			// Migrate order items from cents to decimal if needed
+			if (order.getOrderItems() != null) {
+				for (OrderItem orderItem : order.getOrderItems()) {
+					// If the unit price seems to be in cents (e.g., > 1000), convert it
+					if (orderItem.getUnitPrice().compareTo(new BigDecimal("1000")) > 0) {
+						BigDecimal centPrice = orderItem.getUnitPrice();
+						BigDecimal dollarPrice = centPrice.divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+						orderItem.setUnitPrice(dollarPrice);
+					}
+				}
+			}
+		}
+		
+		orderRepository.saveAll(ordersWithoutDeliveryFee);
+		log.info("Migrated {} orders with delivery fees and order items", ordersWithoutDeliveryFee.size());
 	}
 }
