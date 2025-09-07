@@ -3,6 +3,7 @@ package com.charbel.ecommerce.review.service;
 import com.charbel.ecommerce.exception.DuplicateReviewException;
 import com.charbel.ecommerce.exception.DuplicateHelpfulVoteException;
 import com.charbel.ecommerce.exception.ReviewNotFoundException;
+import com.charbel.ecommerce.exception.SelfHelpfulVoteException;
 import com.charbel.ecommerce.exception.UnauthorizedReviewAccessException;
 import com.charbel.ecommerce.orders.repository.OrderRepository;
 import com.charbel.ecommerce.product.entity.Product;
@@ -273,6 +274,11 @@ public class ReviewService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
+
+        // Check if user is trying to mark their own review as helpful
+        if (review.getUserId().equals(userId)) {
+            throw new SelfHelpfulVoteException("You cannot mark your own review as helpful");
+        }
 
         // Check if user has already voted for this review
         if (reviewHelpfulVoteRepository.existsByReviewIdAndUserId(reviewId, userId)) {

@@ -135,6 +135,17 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
 	}
 
+	@ExceptionHandler(SelfHelpfulVoteException.class)
+	public ResponseEntity<ErrorResponse> handleSelfHelpfulVote(SelfHelpfulVoteException ex, WebRequest request) {
+		log.warn("Self helpful vote attempt: {}", ex.getMessage());
+
+		ErrorResponse errorResponse = ErrorResponse.builder().status(HttpStatus.FORBIDDEN.value())
+				.error("Self Helpful Vote Not Allowed").message(ex.getMessage())
+				.path(request.getDescription(false).replace("uri=", "")).timestamp(LocalDateTime.now()).build();
+
+		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+	}
+
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex, WebRequest request) {
 		log.error("Unexpected error: ", ex);
