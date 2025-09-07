@@ -375,6 +375,34 @@ public class ProductService {
 		return products.map(this::mapToProductResponse);
 	}
 
+	@Transactional(readOnly = true)
+	public Page<ProductResponse> getFilteredProductsByCategoryId(UUID categoryId, ProductSortType sortType, 
+																ProductFilterRequest filterRequest, Pageable pageable) {
+		log.info("Fetching filtered products by category ID: {} with sortType: {}, filters: {}, page: {}, size: {}", 
+				categoryId, sortType, filterRequest, pageable.getPageNumber(), pageable.getPageSize());
+
+		// Prices are stored as BigDecimal in dollars, no conversion needed
+		BigDecimal minPrice = filterRequest.getMinPrice();
+		BigDecimal maxPrice = filterRequest.getMaxPrice();
+
+		// Convert to uppercase for consistent matching
+		List<String> upperColors = filterRequest.getColors() != null && !filterRequest.getColors().isEmpty() ?
+			filterRequest.getColors().stream().map(String::toUpperCase).collect(Collectors.toList()) : null;
+		List<String> upperSizes = filterRequest.getSizes() != null && !filterRequest.getSizes().isEmpty() ?
+			filterRequest.getSizes().stream().map(String::toUpperCase).collect(Collectors.toList()) : null;
+
+		Page<Product> products;
+		if (sortType == null || sortType == ProductSortType.DEFAULT) {
+			products = productRepository.findFilteredProductsByCategoryId(
+				categoryId, minPrice, maxPrice, upperColors, upperSizes, pageable);
+		} else {
+			products = productRepository.findFilteredProductsByCategoryIdWithSort(
+				categoryId, minPrice, maxPrice, upperColors, upperSizes, sortType.name(), pageable);
+		}
+		
+		return products.map(this::mapToProductResponse);
+	}
+
 	private DiscountInfo getActiveDiscountForProduct(UUID productId) {
 		LocalDateTime now = LocalDateTime.now();
 		List<Event> activeEvents = productRepository.findActiveEventsWithDiscountsForProduct(productId, now);

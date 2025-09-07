@@ -25,6 +25,7 @@ import com.charbel.ecommerce.common.enums.ProductSortType;
 import com.charbel.ecommerce.product.dto.AddStockRequest;
 import com.charbel.ecommerce.product.dto.AddStockResponse;
 import com.charbel.ecommerce.product.dto.LowStockResponse;
+import com.charbel.ecommerce.product.dto.ProductFilterRequest;
 import com.charbel.ecommerce.product.dto.ProductResponse;
 import com.charbel.ecommerce.product.service.ProductService;
 
@@ -135,13 +136,26 @@ public class ProductController {
 	}
 
 	@GetMapping("/products/category/{categoryId}")
-	@Operation(summary = "Get products by category", description = "Returns a paginated list of products from a specific category with optional sorting")
+	@Operation(summary = "Get products by category", description = "Returns a paginated list of products from a specific category with optional sorting and filtering")
 	public ResponseEntity<Page<ProductResponse>> getProductsByCategory(@PathVariable UUID categoryId,
 			@RequestParam(required = false, defaultValue = "DEFAULT") ProductSortType sortType,
+			@RequestParam(required = false) BigDecimal minPrice,
+			@RequestParam(required = false) BigDecimal maxPrice,
+			@RequestParam(required = false) List<String> colors,
+			@RequestParam(required = false) List<String> sizes,
 			@PageableDefault(size = 20) Pageable pageable) {
 		log.info("Fetching products for category ID: {} with sortType: {} and pagination: page={}, size={}", 
 				categoryId, sortType, pageable.getPageNumber(), pageable.getPageSize());
-		Page<ProductResponse> response = productService.getProductsByCategoryId(categoryId, sortType, pageable);
+		
+		// Build filter request
+		ProductFilterRequest filterRequest = ProductFilterRequest.builder()
+				.minPrice(minPrice)
+				.maxPrice(maxPrice)
+				.colors(colors)
+				.sizes(sizes)
+				.build();
+		
+		Page<ProductResponse> response = productService.getFilteredProductsByCategoryId(categoryId, sortType, filterRequest, pageable);
 		return ResponseEntity.ok(response);
 	}
 

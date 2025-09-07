@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -52,4 +53,58 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 		   "AND :currentTime BETWEEN e.startDate AND e.endDate")
 	List<Event> findActiveEventsWithDiscountsForProduct(@Param("productId") UUID productId, 
 														@Param("currentTime") LocalDateTime currentTime);
+
+	@Query("SELECT DISTINCT p FROM Product p " +
+		   "LEFT JOIN FETCH p.variants v " +
+		   "LEFT JOIN FETCH p.brand " +
+		   "LEFT JOIN FETCH p.category " +
+		   "WHERE p.categoryId = :categoryId " +
+		   "AND p.status = 'ACTIVE' " +
+		   "AND EXISTS (" +
+		   "  SELECT 1 FROM ProductVariant pv " +
+		   "  WHERE pv.product.id = p.id " +
+		   "  AND (:minPrice IS NULL OR pv.price >= :minPrice) " +
+		   "  AND (:maxPrice IS NULL OR pv.price <= :maxPrice) " +
+		   "  AND (:#{#colors == null} = true OR " +
+		   "       UPPER(FUNCTION('jsonb_extract_path_text', pv.attributes, 'color')) IN :colors) " +
+		   "  AND (:#{#sizes == null} = true OR " +
+		   "       UPPER(FUNCTION('jsonb_extract_path_text', pv.attributes, 'size')) IN :sizes)" +
+		   ")")
+	Page<Product> findFilteredProductsByCategoryId(@Param("categoryId") UUID categoryId,
+												   @Param("minPrice") BigDecimal minPrice,
+												   @Param("maxPrice") BigDecimal maxPrice,
+												   @Param("colors") List<String> colors,
+												   @Param("sizes") List<String> sizes,
+												   Pageable pageable);
+
+	@Query("SELECT DISTINCT p FROM Product p " +
+		   "LEFT JOIN FETCH p.variants v " +
+		   "LEFT JOIN FETCH p.brand " +
+		   "LEFT JOIN FETCH p.category " +
+		   "WHERE p.categoryId = :categoryId " +
+		   "AND p.status = 'ACTIVE' " +
+		   "AND EXISTS (" +
+		   "  SELECT 1 FROM ProductVariant pv " +
+		   "  WHERE pv.product.id = p.id " +
+		   "  AND (:minPrice IS NULL OR pv.price >= :minPrice) " +
+		   "  AND (:maxPrice IS NULL OR pv.price <= :maxPrice) " +
+		   "  AND (:#{#colors == null} = true OR " +
+		   "       UPPER(FUNCTION('jsonb_extract_path_text', pv.attributes, 'color')) IN :colors) " +
+		   "  AND (:#{#sizes == null} = true OR " +
+		   "       UPPER(FUNCTION('jsonb_extract_path_text', pv.attributes, 'size')) IN :sizes)" +
+		   ") " +
+		   "ORDER BY " +
+		   "CASE WHEN :sortType = 'PRICE_HIGH_TO_LOW' THEN p.basePrice END DESC, " +
+		   "CASE WHEN :sortType = 'PRICE_LOW_TO_HIGH' THEN p.basePrice END ASC, " +
+		   "CASE WHEN :sortType = 'REVIEWS' THEN p.averageRating END DESC, " +
+		   "CASE WHEN :sortType = 'REVIEWS' THEN p.reviewCount END DESC, " +
+		   "CASE WHEN :sortType = 'NEWEST' THEN p.createdAt END DESC, " +
+		   "p.id ASC")
+	Page<Product> findFilteredProductsByCategoryIdWithSort(@Param("categoryId") UUID categoryId,
+														   @Param("minPrice") BigDecimal minPrice,
+														   @Param("maxPrice") BigDecimal maxPrice,
+														   @Param("colors") List<String> colors,
+														   @Param("sizes") List<String> sizes,
+														   @Param("sortType") String sortType,
+														   Pageable pageable);
 }

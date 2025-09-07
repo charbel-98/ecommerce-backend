@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -74,7 +75,7 @@ public class AdminEventResponse {
 			if (discount.getType().name().equals("PERCENTAGE")) {
 				return discount.getValue() + "%";
 			} else {
-				return "$" + String.format("%.2f", discount.getValue() / 100.0);
+				return "$" + String.format("%.2f", discount.getValue().divide(new BigDecimal("100")).doubleValue());
 			}
 		}).collect(Collectors.joining(", "));
 	}
