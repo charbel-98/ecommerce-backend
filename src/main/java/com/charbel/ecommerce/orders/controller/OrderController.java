@@ -1,17 +1,19 @@
 package com.charbel.ecommerce.orders.controller;
 
+import com.charbel.ecommerce.orders.dto.CreateOrderRequest;
+import com.charbel.ecommerce.orders.dto.CreateOrderResponse;
 import com.charbel.ecommerce.orders.dto.OrderResponse;
 import com.charbel.ecommerce.orders.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -19,10 +21,28 @@ import java.util.List;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Admin Orders", description = "Admin order management endpoints")
+@Tag(name = "Orders", description = "Order management endpoints")
 public class OrderController {
 
 	private final OrderService orderService;
+
+	@PostMapping("/orders")
+	@PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+	@Operation(summary = "Create a new order", description = "Creates a new order for the authenticated customer", security = @SecurityRequirement(name = "bearerAuth"))
+	public ResponseEntity<CreateOrderResponse> createOrder(@Valid @RequestBody CreateOrderRequest request) {
+		log.info("Creating new order with {} items", request.getItems().size());
+		CreateOrderResponse response = orderService.createOrder(request);
+		return ResponseEntity.status(HttpStatus.CREATED).body(response);
+	}
+
+	@GetMapping("/orders/me")
+	@PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+	@Operation(summary = "Get current user's orders", description = "Returns orders for the authenticated customer", security = @SecurityRequirement(name = "bearerAuth"))
+	public ResponseEntity<List<OrderResponse>> getUserOrders() {
+		log.info("Fetching orders for current user");
+		List<OrderResponse> response = orderService.getUserOrders();
+		return ResponseEntity.ok(response);
+	}
 
 	@GetMapping("/admin/orders")
 	@PreAuthorize("hasRole('ADMIN')")

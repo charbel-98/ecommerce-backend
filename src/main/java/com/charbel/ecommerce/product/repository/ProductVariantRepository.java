@@ -19,4 +19,7 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
 
 	@Query("SELECT pv.sku FROM ProductVariant pv WHERE pv.sku IN :skus")
 	Set<String> findExistingSkus(Set<String> skus);
+
+	@Query("SELECT pv FROM ProductVariant pv JOIN FETCH pv.product WHERE pv.id IN :variantIds")
+	List<ProductVariant> findByIdInWithProduct(List<UUID> variantIds);
 }

@@ -51,4 +51,13 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
 	boolean existsActiveEventWithDiscountInDateRangeExcludingEvent(@Param("eventId") UUID eventId,
 																   @Param("startDate") LocalDateTime startDate,
 																   @Param("endDate") LocalDateTime endDate);
+
+	@Query("SELECT DISTINCT e FROM Event e " +
+		   "JOIN FETCH e.discounts d " +
+		   "JOIN e.products p " +
+		   "WHERE p.id IN :productIds " +
+		   "AND e.status = 'ACTIVE' " +
+		   "AND :now BETWEEN e.startDate AND e.endDate")
+	List<Event> findActiveEventsWithDiscountsForProducts(@Param("productIds") List<UUID> productIds, 
+														  @Param("now") LocalDateTime now);
 }
