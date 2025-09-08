@@ -10,6 +10,7 @@ import com.charbel.ecommerce.orders.dto.CreateOrderRequest;
 import com.charbel.ecommerce.orders.dto.CreateOrderResponse;
 import com.charbel.ecommerce.orders.dto.OrderItemResponse;
 import com.charbel.ecommerce.orders.dto.OrderResponse;
+import com.charbel.ecommerce.orders.dto.UpdateOrderStatusRequest;
 import com.charbel.ecommerce.orders.entity.Order;
 import com.charbel.ecommerce.orders.entity.OrderItem;
 import com.charbel.ecommerce.orders.repository.OrderRepository;
@@ -246,6 +247,22 @@ public class OrderService {
 			.totalAmount(finalTotal)
 			.items(billItems)
 			.build();
+	}
+	
+	@Transactional
+	public OrderResponse updateOrderStatus(UUID orderId, UpdateOrderStatusRequest request) {
+		User currentUser = securityService.getCurrentUser();
+		
+		Order order = orderRepository.findById(orderId)
+			.orElseThrow(() -> new EntityNotFoundException("Order not found"));
+		
+		order.setStatus(request.getStatus());
+		Order savedOrder = orderRepository.save(order);
+		
+		log.info("Updated order {} status to {} by user {}", 
+			orderId, request.getStatus(), currentUser.getId());
+		
+		return mapToOrderResponse(savedOrder);
 	}
 
 	private BigDecimal calculateBillDiscounts(List<ProductVariant> variants, 

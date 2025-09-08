@@ -224,7 +224,6 @@ Enum fitType {
 
 Enum orderStatus {
   PENDING
-  PAID
   SHIPPED
   COMPLETED
   CANCELLED

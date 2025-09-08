@@ -4,6 +4,7 @@ import com.charbel.ecommerce.orders.dto.BillResponse;
 import com.charbel.ecommerce.orders.dto.CreateOrderRequest;
 import com.charbel.ecommerce.orders.dto.CreateOrderResponse;
 import com.charbel.ecommerce.orders.dto.OrderResponse;
+import com.charbel.ecommerce.orders.dto.UpdateOrderStatusRequest;
 import com.charbel.ecommerce.orders.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -17,6 +18,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api")
@@ -60,6 +62,17 @@ public class OrderController {
 	public ResponseEntity<List<OrderResponse>> getAllOrders() {
 		log.info("Admin requesting all orders");
 		List<OrderResponse> response = orderService.getAllOrders();
+		return ResponseEntity.ok(response);
+	}
+
+	@PutMapping("/admin/orders/{orderId}/status")
+	@PreAuthorize("hasRole('ADMIN')")
+	@Operation(summary = "Update order status", description = "Updates the status of an order. Admin only.", security = @SecurityRequirement(name = "bearerAuth"))
+	public ResponseEntity<OrderResponse> updateOrderStatus(
+			@PathVariable UUID orderId, 
+			@Valid @RequestBody UpdateOrderStatusRequest request) {
+		log.info("Admin updating order {} status to {}", orderId, request.getStatus());
+		OrderResponse response = orderService.updateOrderStatus(orderId, request);
 		return ResponseEntity.ok(response);
 	}
 }
