@@ -215,8 +215,13 @@ Enum fitType {
 
  orders {
   id UUID [pk]
+  orderNumber varchar(20) [unique, not null] // unique order number
   userId UUID fk
-  totalAmount int [not null] // sum in cents
+  addressId UUID fk
+  totalAmount decimal(10,2) [not null]
+  originalAmount decimal(10,2) [not null]
+  discountAmount decimal(10,2) [not null, default: 0]
+  deliveryFee decimal(10,2)
   status orderStatus [not null, default: 'PENDING']
   createdAt datetime [not null]
   updatedAt datetime [not null]
@@ -333,6 +338,7 @@ Enum discountType {
 // Users → Carts, Orders, Reviews, Logs, Refresh Tokens, Addresses
  carts.userId > users.id
  orders.userId > users.id
+ orders.addressId > addresses.id
  reviews.userId > users.id
  audit_logs.userId > users.id
  refresh_tokens.userId > users.id
