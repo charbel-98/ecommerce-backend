@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -101,6 +102,7 @@ public class OrderService {
 		
 		// Create order
 		Order order = Order.builder()
+			.orderNumber(generateOrderNumber())
 			.user(currentUser)
 			.address(address)
 			.originalAmount(originalTotal)
@@ -148,9 +150,41 @@ public class OrderService {
 		return mapToCreateOrderResponse(savedOrder);
 	}
 
+	private String generateOrderNumber() {
+		String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+		String orderNumber;
+		int attempts = 0;
+		int maxAttempts = 10;
+		
+		do {
+			String randomSuffix = String.format("%06d", (int) (Math.random() * 1000000));
+			orderNumber = "ORD" + timestamp + randomSuffix;
+			attempts++;
+		} while (orderRepository.existsByOrderNumber(orderNumber) && attempts < maxAttempts);
+		
+		if (attempts >= maxAttempts) {
+			// Fallback to timestamp + UUID suffix if we can't find a unique number
+			orderNumber = "ORD" + timestamp + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+		}
+		
+		return orderNumber;
+	}
+
 	public List<OrderResponse> getUserOrders() {
 		User currentUser = securityService.getCurrentUser();
 		List<Order> orders = orderRepository.findByUserIdWithDetails(currentUser.getId());
+		return orders.stream().map(this::mapToOrderResponse).collect(Collectors.toList());
+	}
+
+	public List<OrderResponse> getUserOrdersByStatus(Order.OrderStatus status) {
+		User currentUser = securityService.getCurrentUser();
+		List<Order> orders = orderRepository.findByUserIdAndStatusWithDetails(currentUser.getId(), status);
+		return orders.stream().map(this::mapToOrderResponse).collect(Collectors.toList());
+	}
+
+	public List<OrderResponse> getUserOrdersByStatuses(List<Order.OrderStatus> statuses) {
+		User currentUser = securityService.getCurrentUser();
+		List<Order> orders = orderRepository.findByUserIdAndStatusInWithDetails(currentUser.getId(), statuses);
 		return orders.stream().map(this::mapToOrderResponse).collect(Collectors.toList());
 	}
 
@@ -341,8 +375,17 @@ public class OrderService {
 			.map(this::mapToOrderItemResponse)
 			.collect(Collectors.toList());
 
+		// Order number should already be set for new orders
+		String orderNumber = order.getOrderNumber();
+		if (orderNumber == null) {
+			orderNumber = generateOrderNumber();
+			order.setOrderNumber(orderNumber);
+			orderRepository.save(order);
+		}
+
 		return CreateOrderResponse.builder()
 			.orderId(order.getId())
+			.orderNumber(orderNumber)
 			.addressId(order.getAddress().getId())
 			.originalAmount(order.getOriginalAmount())
 			.discountAmount(order.getDiscountAmount())
@@ -358,11 +401,20 @@ public class OrderService {
 		List<OrderItemResponse> orderItemResponses = order.getOrderItems().stream().map(this::mapToOrderItemResponse)
 				.collect(Collectors.toList());
 
-		return OrderResponse.builder().id(order.getId()).userId(order.getUser().getId())
-				.userEmail(order.getUser().getEmail()).userFirstName(order.getUser().getFirstName())
-				.userLastName(order.getUser().getLastName()).originalAmount(order.getOriginalAmount())
-				.discountAmount(order.getDiscountAmount()).deliveryFee(order.getDeliveryFee())
-				.totalAmount(order.getTotalAmount()).status(order.getStatus()).orderItems(orderItemResponses)
+		// Generate order number if it doesn't exist (for existing orders)
+		String orderNumber = order.getOrderNumber();
+		if (orderNumber == null) {
+			orderNumber = generateOrderNumber();
+			order.setOrderNumber(orderNumber);
+			orderRepository.save(order);
+		}
+
+		return OrderResponse.builder().id(order.getId()).orderNumber(orderNumber)
+				.userId(order.getUser().getId()).userEmail(order.getUser().getEmail())
+				.userFirstName(order.getUser().getFirstName()).userLastName(order.getUser().getLastName())
+				.originalAmount(order.getOriginalAmount()).discountAmount(order.getDiscountAmount())
+				.deliveryFee(order.getDeliveryFee()).totalAmount(order.getTotalAmount())
+				.status(order.getStatus()).orderItems(orderItemResponses)
 				.createdAt(order.getCreatedAt()).updatedAt(order.getUpdatedAt()).build();
 	}
 

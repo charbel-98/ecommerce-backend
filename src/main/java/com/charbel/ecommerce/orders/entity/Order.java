@@ -41,6 +41,9 @@ public class Order {
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
 
+	@Column(name = "order_number", nullable = true, unique = true, length = 20)
+	private String orderNumber;
+
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "user_id", nullable = false)
 	private User user;

@@ -5,6 +5,7 @@ import com.charbel.ecommerce.orders.dto.CreateOrderRequest;
 import com.charbel.ecommerce.orders.dto.CreateOrderResponse;
 import com.charbel.ecommerce.orders.dto.OrderResponse;
 import com.charbel.ecommerce.orders.dto.UpdateOrderStatusRequest;
+import com.charbel.ecommerce.orders.entity.Order.OrderStatus;
 import com.charbel.ecommerce.orders.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -17,6 +18,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,9 +43,40 @@ public class OrderController {
 
 	@GetMapping("/orders/me")
 	@PreAuthorize("hasRole('CUSTOMER') or hasRole('ADMIN')")
-	@Operation(summary = "Get current user's orders", description = "Returns orders for the authenticated customer", security = @SecurityRequirement(name = "bearerAuth"))
-	public ResponseEntity<List<OrderResponse>> getUserOrders() {
-		log.info("Fetching orders for current user");
+	@Operation(summary = "Get current user's orders", description = "Returns orders for the authenticated customer, optionally filtered by status(es). Multiple statuses can be provided: ?status=PENDING,SHIPPED or ?status=PENDING&status=SHIPPED", security = @SecurityRequirement(name = "bearerAuth"))
+	public ResponseEntity<List<OrderResponse>> getUserOrders(
+			@RequestParam(required = false, name = "status") String[] statusArray) {
+		log.info("Received status parameters: {}", statusArray != null ? Arrays.toString(statusArray) : "null");
+		
+		if (statusArray != null && statusArray.length > 0) {
+			List<OrderStatus> statuses = new ArrayList<>();
+			for (String statusStr : statusArray) {
+				// Handle comma-separated values in a single parameter
+				if (statusStr.contains(",")) {
+					for (String individualStatus : statusStr.split(",")) {
+						try {
+							statuses.add(OrderStatus.valueOf(individualStatus.trim()));
+						} catch (IllegalArgumentException e) {
+							log.warn("Invalid order status: {}", individualStatus.trim());
+						}
+					}
+				} else {
+					try {
+						statuses.add(OrderStatus.valueOf(statusStr.trim()));
+					} catch (IllegalArgumentException e) {
+						log.warn("Invalid order status: {}", statusStr.trim());
+					}
+				}
+			}
+			
+			if (!statuses.isEmpty()) {
+				log.info("Fetching orders for current user with statuses: {}", statuses);
+				List<OrderResponse> response = orderService.getUserOrdersByStatuses(statuses);
+				return ResponseEntity.ok(response);
+			}
+		}
+		
+		log.info("Fetching all orders for current user");
 		List<OrderResponse> response = orderService.getUserOrders();
 		return ResponseEntity.ok(response);
 	}

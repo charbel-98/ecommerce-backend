@@ -1,6 +1,7 @@
 package com.charbel.ecommerce.orders.repository;
 
 import com.charbel.ecommerce.orders.entity.Order;
+import com.charbel.ecommerce.orders.entity.Order.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -19,4 +20,12 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
 	@Query("SELECT o FROM Order o JOIN FETCH o.user JOIN FETCH o.address JOIN FETCH o.orderItems oi JOIN FETCH oi.variant v JOIN FETCH v.product WHERE o.user.id = :userId ORDER BY o.createdAt DESC")
 	List<Order> findByUserIdWithDetails(UUID userId);
+
+	@Query("SELECT o FROM Order o JOIN FETCH o.user JOIN FETCH o.address JOIN FETCH o.orderItems oi JOIN FETCH oi.variant v JOIN FETCH v.product WHERE o.user.id = :userId AND o.status = :status ORDER BY o.createdAt DESC")
+	List<Order> findByUserIdAndStatusWithDetails(UUID userId, OrderStatus status);
+
+	@Query("SELECT o FROM Order o JOIN FETCH o.user JOIN FETCH o.address JOIN FETCH o.orderItems oi JOIN FETCH oi.variant v JOIN FETCH v.product WHERE o.user.id = :userId AND o.status IN :statuses ORDER BY o.createdAt DESC")
+	List<Order> findByUserIdAndStatusInWithDetails(UUID userId, List<OrderStatus> statuses);
+
+	boolean existsByOrderNumber(String orderNumber);
 }
