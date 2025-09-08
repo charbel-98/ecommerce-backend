@@ -1,13 +1,12 @@
 package com.charbel.ecommerce.brand.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
 @Data
-public class CreateBrandRequest {
+public class UpdateBrandRequest {
 
 	@NotBlank(message = "Brand name is required")
 	private String name;
@@ -20,6 +19,5 @@ public class CreateBrandRequest {
 
 	private String websiteUrl;
 
-	@NotNull(message = "Logo image is required")
 	private MultipartFile logo;
 }

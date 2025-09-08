@@ -2,6 +2,7 @@ package com.charbel.ecommerce.brand.controller;
 
 import com.charbel.ecommerce.brand.dto.BrandResponse;
 import com.charbel.ecommerce.brand.dto.CreateBrandRequest;
+import com.charbel.ecommerce.brand.dto.UpdateBrandRequest;
 import com.charbel.ecommerce.brand.service.BrandService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -10,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -53,20 +55,20 @@ public class BrandController {
 		return ResponseEntity.ok(brands);
 	}
 
-	@PostMapping("/admin/brands")
+	@PostMapping(value = "/admin/brands", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('ADMIN')")
 	@Operation(summary = "Create a new brand", description = "Creates a new brand. Admin only.", security = @SecurityRequirement(name = "bearerAuth"))
-	public ResponseEntity<BrandResponse> createBrand(@Valid @RequestBody CreateBrandRequest request) {
+	public ResponseEntity<BrandResponse> createBrand(@Valid @ModelAttribute CreateBrandRequest request) {
 		log.info("Admin creating new brand: {}", request.getName());
 		BrandResponse brand = brandService.createBrand(request);
 		return ResponseEntity.status(HttpStatus.CREATED).body(brand);
 	}
 
-	@PutMapping("/admin/brands/{id}")
+	@PutMapping(value = "/admin/brands/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('ADMIN')")
 	@Operation(summary = "Update a brand", description = "Updates an existing brand. Admin only.", security = @SecurityRequirement(name = "bearerAuth"))
 	public ResponseEntity<BrandResponse> updateBrand(@PathVariable UUID id,
-			@Valid @RequestBody CreateBrandRequest request) {
+			@Valid @ModelAttribute UpdateBrandRequest request) {
 		log.info("Admin updating brand with id: {}", id);
 		BrandResponse brand = brandService.updateBrand(id, request);
 		return ResponseEntity.ok(brand);
