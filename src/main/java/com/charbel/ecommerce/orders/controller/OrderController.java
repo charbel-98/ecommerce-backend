@@ -4,6 +4,7 @@ import com.charbel.ecommerce.orders.dto.BillResponse;
 import com.charbel.ecommerce.orders.dto.CreateOrderRequest;
 import com.charbel.ecommerce.orders.dto.CreateOrderResponse;
 import com.charbel.ecommerce.orders.dto.OrderResponse;
+import com.charbel.ecommerce.orders.dto.PaginatedOrdersResponse;
 import com.charbel.ecommerce.orders.dto.UpdateOrderStatusRequest;
 import com.charbel.ecommerce.orders.entity.Order.OrderStatus;
 import com.charbel.ecommerce.orders.service.OrderService;
@@ -13,6 +14,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -43,10 +47,18 @@ public class OrderController {
 
 	@GetMapping("/orders/me")
 	@PreAuthorize("hasRole('CUSTOMER') or hasRole('ADMIN')")
-	@Operation(summary = "Get current user's orders", description = "Returns orders for the authenticated customer, optionally filtered by status(es). Multiple statuses can be provided: ?status=PENDING,SHIPPED or ?status=PENDING&status=SHIPPED", security = @SecurityRequirement(name = "bearerAuth"))
-	public ResponseEntity<List<OrderResponse>> getUserOrders(
-			@RequestParam(required = false, name = "status") String[] statusArray) {
+	@Operation(summary = "Get current user's orders", description = "Returns paginated orders for the authenticated customer, optionally filtered by status(es). Multiple statuses can be provided: ?status=PENDING,SHIPPED or ?status=PENDING&status=SHIPPED", security = @SecurityRequirement(name = "bearerAuth"))
+	public ResponseEntity<PaginatedOrdersResponse> getUserOrders(
+			@RequestParam(required = false, name = "status") String[] statusArray,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "10") int size,
+			@RequestParam(defaultValue = "createdAt") String sort,
+			@RequestParam(defaultValue = "desc") String direction) {
 		log.info("Received status parameters: {}", statusArray != null ? Arrays.toString(statusArray) : "null");
+		
+		// Create pagination object
+		Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
+		Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
 		
 		if (statusArray != null && statusArray.length > 0) {
 			List<OrderStatus> statuses = new ArrayList<>();
@@ -71,13 +83,13 @@ public class OrderController {
 			
 			if (!statuses.isEmpty()) {
 				log.info("Fetching orders for current user with statuses: {}", statuses);
-				List<OrderResponse> response = orderService.getUserOrdersByStatuses(statuses);
+				PaginatedOrdersResponse response = orderService.getUserOrdersByStatusesPaginated(statuses, pageable);
 				return ResponseEntity.ok(response);
 			}
 		}
 		
 		log.info("Fetching all orders for current user");
-		List<OrderResponse> response = orderService.getUserOrders();
+		PaginatedOrdersResponse response = orderService.getUserOrdersPaginated(pageable);
 		return ResponseEntity.ok(response);
 	}
 
@@ -92,10 +104,19 @@ public class OrderController {
 
 	@GetMapping("/admin/orders")
 	@PreAuthorize("hasRole('ADMIN')")
-	@Operation(summary = "Get all orders", description = "Returns all orders with details. Admin only.", security = @SecurityRequirement(name = "bearerAuth"))
-	public ResponseEntity<List<OrderResponse>> getAllOrders() {
-		log.info("Admin requesting all orders");
-		List<OrderResponse> response = orderService.getAllOrders();
+	@Operation(summary = "Get all orders", description = "Returns paginated orders with details. Admin only.", security = @SecurityRequirement(name = "bearerAuth"))
+	public ResponseEntity<PaginatedOrdersResponse> getAllOrders(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "10") int size,
+			@RequestParam(defaultValue = "createdAt") String sort,
+			@RequestParam(defaultValue = "desc") String direction) {
+		log.info("Admin requesting all orders with pagination");
+		
+		// Create pagination object
+		Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
+		Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
+		
+		PaginatedOrdersResponse response = orderService.getAllOrdersPaginated(pageable);
 		return ResponseEntity.ok(response);
 	}
 

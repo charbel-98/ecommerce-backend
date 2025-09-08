@@ -2,6 +2,8 @@ package com.charbel.ecommerce.orders.repository;
 
 import com.charbel.ecommerce.orders.entity.Order;
 import com.charbel.ecommerce.orders.entity.Order.OrderStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -58,4 +60,41 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
 	@Query("SELECT o FROM Order o WHERE o.isDeleted = false AND o.id = :id")
 	Optional<Order> findByIdAndNotDeleted(@Param("id") UUID id);
+
+	// Paginated queries
+	@Query("SELECT DISTINCT o FROM Order o " +
+		   "JOIN FETCH o.user " +
+		   "JOIN FETCH o.address " +
+		   "JOIN FETCH o.orderItems oi " +
+		   "JOIN FETCH oi.variant v " +
+		   "JOIN FETCH v.product p " +
+		   "WHERE o.isDeleted = false ORDER BY o.createdAt DESC")
+	Page<Order> findAllOrdersWithDetailsPaginated(Pageable pageable);
+
+	@Query("SELECT DISTINCT o FROM Order o " +
+		   "JOIN FETCH o.user " +
+		   "JOIN FETCH o.address " +
+		   "JOIN FETCH o.orderItems oi " +
+		   "JOIN FETCH oi.variant v " +
+		   "JOIN FETCH v.product p " +
+		   "WHERE o.isDeleted = false AND o.user.id = :userId ORDER BY o.createdAt DESC")
+	Page<Order> findByUserIdWithDetailsPaginated(@Param("userId") UUID userId, Pageable pageable);
+
+	@Query("SELECT DISTINCT o FROM Order o " +
+		   "JOIN FETCH o.user " +
+		   "JOIN FETCH o.address " +
+		   "JOIN FETCH o.orderItems oi " +
+		   "JOIN FETCH oi.variant v " +
+		   "JOIN FETCH v.product p " +
+		   "WHERE o.isDeleted = false AND o.user.id = :userId AND o.status = :status ORDER BY o.createdAt DESC")
+	Page<Order> findByUserIdAndStatusWithDetailsPaginated(@Param("userId") UUID userId, @Param("status") OrderStatus status, Pageable pageable);
+
+	@Query("SELECT DISTINCT o FROM Order o " +
+		   "JOIN FETCH o.user " +
+		   "JOIN FETCH o.address " +
+		   "JOIN FETCH o.orderItems oi " +
+		   "JOIN FETCH oi.variant v " +
+		   "JOIN FETCH v.product p " +
+		   "WHERE o.isDeleted = false AND o.user.id = :userId AND o.status IN :statuses ORDER BY o.createdAt DESC")
+	Page<Order> findByUserIdAndStatusInWithDetailsPaginated(@Param("userId") UUID userId, @Param("statuses") List<OrderStatus> statuses, Pageable pageable);
 }

@@ -10,6 +10,7 @@ import com.charbel.ecommerce.orders.dto.CreateOrderRequest;
 import com.charbel.ecommerce.orders.dto.CreateOrderResponse;
 import com.charbel.ecommerce.orders.dto.OrderItemResponse;
 import com.charbel.ecommerce.orders.dto.OrderResponse;
+import com.charbel.ecommerce.orders.dto.PaginatedOrdersResponse;
 import com.charbel.ecommerce.orders.dto.UpdateOrderStatusRequest;
 import com.charbel.ecommerce.product.dto.ProductImageResponse;
 import com.charbel.ecommerce.product.entity.ProductImage;
@@ -25,6 +26,8 @@ import com.charbel.ecommerce.service.SecurityService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -190,6 +193,25 @@ public class OrderService {
 		User currentUser = securityService.getCurrentUser();
 		List<Order> orders = orderRepository.findByUserIdAndStatusInWithDetails(currentUser.getId(), statuses);
 		return orders.stream().map(this::mapToOrderResponse).collect(Collectors.toList());
+	}
+
+	// Paginated methods
+	public PaginatedOrdersResponse getAllOrdersPaginated(Pageable pageable) {
+		log.info("Fetching all orders for admin with pagination");
+		Page<Order> orderPage = orderRepository.findAllOrdersWithDetailsPaginated(pageable);
+		return mapToPaginatedOrdersResponse(orderPage);
+	}
+
+	public PaginatedOrdersResponse getUserOrdersPaginated(Pageable pageable) {
+		User currentUser = securityService.getCurrentUser();
+		Page<Order> orderPage = orderRepository.findByUserIdWithDetailsPaginated(currentUser.getId(), pageable);
+		return mapToPaginatedOrdersResponse(orderPage);
+	}
+
+	public PaginatedOrdersResponse getUserOrdersByStatusesPaginated(List<Order.OrderStatus> statuses, Pageable pageable) {
+		User currentUser = securityService.getCurrentUser();
+		Page<Order> orderPage = orderRepository.findByUserIdAndStatusInWithDetailsPaginated(currentUser.getId(), statuses, pageable);
+		return mapToPaginatedOrdersResponse(orderPage);
 	}
 
 	public BillResponse calculateBill(CreateOrderRequest request) {
@@ -421,6 +443,21 @@ public class OrderService {
 				.totalAmount(order.getTotalAmount()).status(order.getStatus())
 				.orderItems(orderItemResponses).createdAt(order.getCreatedAt())
 				.updatedAt(order.getUpdatedAt()).build();
+	}
+
+	private PaginatedOrdersResponse mapToPaginatedOrdersResponse(Page<Order> orderPage) {
+		List<OrderResponse> orderResponses = orderPage.getContent().stream()
+				.map(this::mapToOrderResponse)
+				.collect(Collectors.toList());
+
+		return PaginatedOrdersResponse.builder()
+				.orders(orderResponses)
+				.currentPage(orderPage.getNumber())
+				.totalPages(orderPage.getTotalPages())
+				.totalElements(orderPage.getTotalElements())
+				.hasNext(orderPage.hasNext())
+				.hasPrevious(orderPage.hasPrevious())
+				.build();
 	}
 
 	private OrderItemResponse mapToOrderItemResponse(OrderItem orderItem) {
