@@ -138,12 +138,12 @@ public class EventController {
 				? event.getProducts().stream().map(productResponseMapper::mapToProductResponse).collect(Collectors.toList())
 				: List.of();
 			
-			// Map discounts
-			List<DiscountResponse> discounts = event.getDiscounts() != null
-				? event.getDiscounts().stream().map(DiscountResponse::fromEntity).collect(Collectors.toList())
-				: List.of();
+			// Map single discount
+			DiscountResponse discount = event.getDiscounts() != null && !event.getDiscounts().isEmpty()
+				? DiscountResponse.fromEntity(event.getDiscounts().get(0))
+				: null;
 			
-			AdminEventResponse response = AdminEventResponse.fromEntity(event, discounts, products);
+			AdminEventResponse response = AdminEventResponse.fromEntity(event, discount, products);
 			return ResponseEntity.ok(response);
 		} catch (EntityNotFoundException e) {
 			log.error("Event not found with id: {}", id);
@@ -171,12 +171,12 @@ public class EventController {
 					? event.getProducts().stream().map(productResponseMapper::mapToProductResponse).collect(Collectors.toList())
 					: List.of();
 				
-				// Map discounts
-				List<DiscountResponse> discounts = event.getDiscounts() != null
-					? event.getDiscounts().stream().map(DiscountResponse::fromEntity).collect(Collectors.toList())
-					: List.of();
+				// Map single discount
+				DiscountResponse discount = event.getDiscounts() != null && !event.getDiscounts().isEmpty()
+					? DiscountResponse.fromEntity(event.getDiscounts().get(0))
+					: null;
 				
-				return AdminEventResponse.fromEntity(event, discounts, products);
+				return AdminEventResponse.fromEntity(event, discount, products);
 			}).collect(Collectors.toList());
 
 			PaginatedAdminEventsResponse response = PaginatedAdminEventsResponse.builder().events(eventResponses)
@@ -195,7 +195,7 @@ public class EventController {
 	@Operation(summary = "Get event by ID", description = "Retrieves detailed event information including discounts")
 	public ResponseEntity<EventResponse> getEventById(@PathVariable UUID id) {
 		Event event = eventService.getEventById(id);
-		EventResponse response = EventResponse.fromEntityWithDiscounts(event);
+		EventResponse response = EventResponse.fromEntityWithDiscount(event);
 		return ResponseEntity.ok(response);
 	}
 

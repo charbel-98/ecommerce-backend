@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -59,6 +57,7 @@ services:
       # Logging Configuration
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       SECURITY_LOG_LEVEL: ${SECURITY_LOG_LEVEL:-INFO}
+      WEB_LOG_LEVEL: ${WEB_LOG_LEVEL:-INFO}
       
       # Data Seeding
       SEED_DATA: ${SEED_DATA:-true}
@@ -68,7 +67,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -1,7 +1,7 @@
 # Multi-stage Docker build for Spring Boot E-commerce Backend
 
 # Stage 1: Build stage
-FROM maven:3.9.4-eclipse-temurin-17-alpine AS build
+FROM maven:3.9.5-eclipse-temurin-17 AS build
 
 WORKDIR /app
 
@@ -14,15 +14,15 @@ COPY src ./src
 RUN mvn clean package -DskipTests -B
 
 # Stage 2: Runtime stage
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre
 
 # Add labels for better maintenance
 LABEL maintainer="ecommerce-backend"
 LABEL description="Spring Boot E-commerce Backend API"
 
 # Create non-root user for security
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup
+RUN groupadd --gid 1001 appgroup && \
+    useradd --uid 1001 --gid appgroup --shell /bin/bash --create-home appuser
 
 # Set working directory
 WORKDIR /app
@@ -45,7 +45,7 @@ EXPOSE 8080
 
 # Health check to ensure application is running
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget -q --spider http://localhost:8080/actuator/health || exit 1
+    CMD curl -f http://localhost:8080/actuator/health || exit 1
 
 # Use entrypoint script
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

@@ -34,10 +34,69 @@ build/
 ### VS Code ###
 .vscode/
 
-### Environment variables ###
+### Environment variables and sensitive data ###
 .env
 .env.local
+.env.production
+.env.staging
+.env.development
+.env.test
+*.env
+application-local.yml
+application-prod.yml
+application-secret.yml
+application-*.yml
+!application.yml
+!application-test.yml
+
+### Database ###
+*.db
+*.sqlite
+*.sqlite3
+database.db
+ecommerce.db
 
 ### Logs ###
 logs/
 *.log
+*.log.*
+
+### OS generated files ###
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+### Temporary files ###
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+### IDE and editor files ###
+*.sublime-project
+*.sublime-workspace
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+
+### Maven ###
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.properties
+
+### Spring Boot ###
+spring-boot-*.jar
+*.jar
+*.war
+*.ear
+
+### Docker ###
+.dockerignore
+docker-compose.override.yml
+
+### Test files ###
+test-image.txt

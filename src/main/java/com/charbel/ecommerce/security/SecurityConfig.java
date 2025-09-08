@@ -41,7 +41,7 @@ public class SecurityConfig {
 						// Public endpoints (no authentication required)
 						.requestMatchers("/auth/register", "/auth/login").permitAll()
 						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-						// Admin endpoints (require ADMIN role)
+						// Admin endpoints (require ADMIN role) - be more explicit
 						.requestMatchers("/api/admin/**").hasRole("ADMIN")
 						// All other endpoints require authentication (any authenticated user)
 						.anyRequest().authenticated())

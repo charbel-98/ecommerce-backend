@@ -166,7 +166,12 @@ public class OrderController {
 	public ResponseEntity<AdminOrderResponseDTO> updateOrderStatus(
 			@PathVariable UUID orderId,
 			@Valid @RequestBody UpdateOrderStatusRequest request) {
-		log.info("Admin updating order {} status to {}", orderId, request.getStatus());
+		log.info("=== UPDATE ORDER STATUS ENDPOINT CALLED ===");
+		log.info("Order ID: {}", orderId);
+		log.info("New Status: {}", request.getStatus());
+		log.info("Current Authentication: {}", org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication());
+		log.info("User Authorities: {}", org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getAuthorities());
+		
 		AdminOrderResponseDTO response = orderService.updateOrderStatusForAdmin(orderId, request);
 		return ResponseEntity.ok(response);
 	}

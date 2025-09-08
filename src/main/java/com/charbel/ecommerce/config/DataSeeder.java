@@ -86,13 +86,9 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-        // Only run seeder if explicitly enabled or if database is empty
-        boolean seedEnabled = Arrays.asList(args).contains("--seed") || 
-                             System.getProperty("seed.data", "false").equals("true") ||
-                             brandRepository.count() == 0;
-        
-        if (!seedEnabled) {
-            log.info("DataSeeder skipped - database already contains data. Use --seed argument or seed.data=true property to force re-seeding.");
+        // Only run seeder if there are no products in the database
+        if (productRepository.count() > 0) {
+            log.info("DataSeeder skipped - products already exist in database. Database contains {} products.", productRepository.count());
             return;
         }
         

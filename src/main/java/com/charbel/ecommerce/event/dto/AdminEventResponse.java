@@ -30,16 +30,15 @@ public class AdminEventResponse {
 	private Event.EventStatus status;
 	private boolean isCurrentlyActive;
 
-	// Full discount details for admin
-	private List<DiscountResponse> discounts;
+	// Single discount for this event
+	private DiscountResponse discount;
 
 	// Full product details for admin with all related data
 	private List<ProductResponse> products;
 
 	// Additional admin-specific data
-	private int discountCount;
 	private int productCount;
-	private String totalDiscountSummary;
+	private String discountSummary;
 
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	private LocalDateTime createdAt;
@@ -48,39 +47,37 @@ public class AdminEventResponse {
 	private LocalDateTime updatedAt;
 
 	public static AdminEventResponse fromEntity(Event event) {
-		List<DiscountResponse> discounts = event.getDiscounts() != null
-				? event.getDiscounts().stream().map(DiscountResponse::fromEntity).collect(Collectors.toList())
-				: List.of();
+		DiscountResponse discount = event.getDiscounts() != null && !event.getDiscounts().isEmpty()
+				? DiscountResponse.fromEntity(event.getDiscounts().get(0))
+				: null;
 
 		List<ProductResponse> products = event.getProducts() != null
 				? event.getProducts().stream().map(ProductResponse::fromEntity).collect(Collectors.toList())
 				: List.of();
 
-		return fromEntity(event, discounts, products);
+		return fromEntity(event, discount, products);
 	}
 
-	public static AdminEventResponse fromEntity(Event event, List<DiscountResponse> discounts, List<ProductResponse> products) {
+	public static AdminEventResponse fromEntity(Event event, DiscountResponse discount, List<ProductResponse> products) {
 		// Generate discount summary for admin overview
-		String discountSummary = generateDiscountSummary(discounts);
+		String discountSummary = generateDiscountSummary(discount);
 
 		return AdminEventResponse.builder().id(event.getId()).name(event.getName()).description(event.getDescription())
 				.imageUrl(event.getImageUrl()).startDate(event.getStartDate()).endDate(event.getEndDate())
-				.status(event.getStatus()).isCurrentlyActive(event.isActive()).discounts(discounts).products(products)
-				.discountCount(discounts.size()).productCount(products.size()).totalDiscountSummary(discountSummary)
+				.status(event.getStatus()).isCurrentlyActive(event.isActive()).discount(discount).products(products)
+				.productCount(products.size()).discountSummary(discountSummary)
 				.createdAt(event.getCreatedAt()).updatedAt(event.getUpdatedAt()).build();
 	}
 
-	private static String generateDiscountSummary(List<DiscountResponse> discounts) {
-		if (discounts.isEmpty()) {
-			return "No discounts";
+	private static String generateDiscountSummary(DiscountResponse discount) {
+		if (discount == null) {
+			return "No discount";
 		}
 
-		return discounts.stream().map(discount -> {
-			if (discount.getType().name().equals("PERCENTAGE")) {
-				return discount.getValue() + "%";
-			} else {
-				return "$" + String.format("%.2f", discount.getValue().divide(new BigDecimal("100")).doubleValue());
-			}
-		}).collect(Collectors.joining(", "));
+		if (discount.getType().name().equals("PERCENTAGE")) {
+			return discount.getValue() + "%";
+		} else {
+			return "$" + String.format("%.2f", discount.getValue().divide(new BigDecimal("100")).doubleValue());
+		}
 	}
 }

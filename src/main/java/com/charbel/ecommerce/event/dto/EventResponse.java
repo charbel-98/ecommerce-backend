@@ -8,7 +8,6 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -32,7 +31,7 @@ public class EventResponse {
 	private boolean isCurrentlyActive;
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	private List<DiscountResponse> discounts;
+	private DiscountResponse discount;
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	private Set<ProductResponse> products;
@@ -47,8 +46,8 @@ public class EventResponse {
 		return EventResponse.builder().id(event.getId()).name(event.getName()).description(event.getDescription())
 				.imageUrl(event.getImageUrl()).startDate(event.getStartDate()).endDate(event.getEndDate())
 				.status(event.getStatus()).isCurrentlyActive(event.isActive())
-				.discounts(event.getDiscounts() != null
-						? event.getDiscounts().stream().map(DiscountResponse::fromEntity).collect(Collectors.toList())
+				.discount(event.getDiscounts() != null && !event.getDiscounts().isEmpty()
+						? DiscountResponse.fromEntity(event.getDiscounts().get(0))
 						: null)
 				.products(event.getProducts() != null
 						? event.getProducts().stream().map(ProductResponse::fromEntity).collect(Collectors.toSet())
@@ -63,12 +62,12 @@ public class EventResponse {
 				.updatedAt(event.getUpdatedAt()).build();
 	}
 
-	public static EventResponse fromEntityWithDiscounts(Event event) {
+	public static EventResponse fromEntityWithDiscount(Event event) {
 		return EventResponse.builder().id(event.getId()).name(event.getName()).description(event.getDescription())
 				.imageUrl(event.getImageUrl()).startDate(event.getStartDate()).endDate(event.getEndDate())
 				.status(event.getStatus()).isCurrentlyActive(event.isActive())
-				.discounts(event.getDiscounts() != null
-						? event.getDiscounts().stream().map(DiscountResponse::fromEntity).collect(Collectors.toList())
+				.discount(event.getDiscounts() != null && !event.getDiscounts().isEmpty()
+						? DiscountResponse.fromEntity(event.getDiscounts().get(0))
 						: null)
 				.createdAt(event.getCreatedAt()).updatedAt(event.getUpdatedAt()).build();
 	}
