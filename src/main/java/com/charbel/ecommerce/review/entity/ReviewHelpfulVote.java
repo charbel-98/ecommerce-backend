@@ -1,14 +1,14 @@
 package com.charbel.ecommerce.review.entity;
 
+import com.charbel.ecommerce.common.entity.BaseEntity;
 import com.charbel.ecommerce.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -18,10 +18,11 @@ import java.util.UUID;
     @Index(name = "idx_review_helpful_votes_unique", columnList = "review_id,user_id", unique = true)
 })
 @Data
+@EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ReviewHelpfulVote {
+public class ReviewHelpfulVote extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -41,7 +42,4 @@ public class ReviewHelpfulVote {
     @Column(name = "user_id", insertable = false, updatable = false)
     private UUID userId;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
 }

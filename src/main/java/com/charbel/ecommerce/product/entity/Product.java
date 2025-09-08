@@ -2,18 +2,17 @@ package com.charbel.ecommerce.product.entity;
 
 import com.charbel.ecommerce.brand.entity.Brand;
 import com.charbel.ecommerce.category.entity.Category;
+import com.charbel.ecommerce.common.entity.BaseEntity;
 import com.charbel.ecommerce.common.enums.GenderType;
 import com.charbel.ecommerce.event.entity.Event;
 import com.charbel.ecommerce.review.entity.Review;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
+import lombok.EqualsAndHashCode;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,8 +25,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EqualsAndHashCode(exclude = {"variants", "events"})
-public class Product {
+@EqualsAndHashCode(callSuper = false, exclude = {"variants", "events"})
+public class Product extends BaseEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
@@ -84,14 +83,6 @@ public class Product {
 
 	@OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	private List<Review> reviews;
-
-	@CreationTimestamp
-	@Column(name = "created_at", nullable = false, updatable = false)
-	private LocalDateTime createdAt;
-
-	@UpdateTimestamp
-	@Column(name = "updated_at", nullable = false)
-	private LocalDateTime updatedAt;
 
 	public enum ProductStatus {
 		ACTIVE, INACTIVE

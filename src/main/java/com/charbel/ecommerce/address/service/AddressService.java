@@ -91,9 +91,9 @@ public class AddressService {
 
     @Transactional
     public void deleteAddress(UUID addressId, UUID userId) {
-        log.info("Deleting address {} for user: {}", addressId, userId);
+        log.info("Soft deleting address {} for user: {}", addressId, userId);
 
-        Address address = addressRepository.findByIdAndUserId(addressId, userId)
+        Address address = addressRepository.findByIdAndUserIdAndNotDeleted(addressId, userId)
                 .orElseThrow(() -> new RuntimeException("Address not found"));
 
         // If deleting the default address, make another address default if available
@@ -111,8 +111,9 @@ public class AddressService {
             }
         }
 
-        addressRepository.delete(address);
-        log.info("Address deleted: {}", addressId);
+        address.softDelete();
+        addressRepository.save(address);
+        log.info("Address soft deleted: {}", addressId);
     }
 
     @Transactional

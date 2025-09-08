@@ -12,24 +12,25 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, UUID> {
 
-	@Query("SELECT p FROM Product p LEFT JOIN FETCH p.variants LEFT JOIN FETCH p.brand LEFT JOIN FETCH p.category")
+	@Query("SELECT p FROM Product p LEFT JOIN FETCH p.variants LEFT JOIN FETCH p.brand LEFT JOIN FETCH p.category WHERE p.isDeleted = false")
 	Page<Product> findAllProductsWithVariants(Pageable pageable);
 
 	@Query("SELECT p FROM Product p LEFT JOIN FETCH p.variants LEFT JOIN FETCH p.brand LEFT JOIN FETCH p.category "
-			+ "JOIN p.events e WHERE e.id = :eventId")
+			+ "JOIN p.events e WHERE p.isDeleted = false AND e.id = :eventId")
 	Page<Product> findProductsByEventId(@Param("eventId") UUID eventId, Pageable pageable);
 
 	@Query("SELECT p FROM Product p LEFT JOIN FETCH p.variants LEFT JOIN FETCH p.brand LEFT JOIN FETCH p.category "
-			+ "WHERE p.categoryId = :categoryId AND p.status = 'ACTIVE'")
+			+ "WHERE p.isDeleted = false AND p.categoryId = :categoryId AND p.status = 'ACTIVE'")
 	Page<Product> findProductsByCategoryId(@Param("categoryId") UUID categoryId, Pageable pageable);
 
 	@Query("SELECT p FROM Product p LEFT JOIN FETCH p.variants LEFT JOIN FETCH p.brand LEFT JOIN FETCH p.category "
-			+ "WHERE p.categoryId = :categoryId AND p.status = 'ACTIVE' "
+			+ "WHERE p.isDeleted = false AND p.categoryId = :categoryId AND p.status = 'ACTIVE' "
 			+ "ORDER BY "
 			+ "CASE WHEN :sortType = 'PRICE_HIGH_TO_LOW' THEN p.basePrice END DESC, "
 			+ "CASE WHEN :sortType = 'PRICE_LOW_TO_HIGH' THEN p.basePrice END ASC, "
@@ -42,13 +43,13 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 												   Pageable pageable);
 
 	@Query("SELECT p FROM Product p LEFT JOIN FETCH p.variants LEFT JOIN FETCH p.brand b LEFT JOIN FETCH p.category "
-			+ "WHERE b.slug = :brandSlug AND p.status = 'ACTIVE' AND b.status = 'ACTIVE'")
+			+ "WHERE p.isDeleted = false AND b.slug = :brandSlug AND p.status = 'ACTIVE' AND b.status = 'ACTIVE'")
 	Page<Product> findProductsByBrandSlug(@Param("brandSlug") String brandSlug, Pageable pageable);
 
 	@Query("SELECT DISTINCT e FROM Event e " +
 		   "JOIN e.products p " +
 		   "JOIN e.discounts d " +
-		   "WHERE p.id = :productId " +
+		   "WHERE p.isDeleted = false AND p.id = :productId " +
 		   "AND e.status = 'ACTIVE' " +
 		   "AND :currentTime BETWEEN e.startDate AND e.endDate")
 	List<Event> findActiveEventsWithDiscountsForProduct(@Param("productId") UUID productId, 
@@ -58,7 +59,7 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 		   "LEFT JOIN FETCH p.variants v " +
 		   "LEFT JOIN FETCH p.brand b " +
 		   "LEFT JOIN FETCH p.category " +
-		   "WHERE p.categoryId = :categoryId " +
+		   "WHERE p.isDeleted = false AND p.categoryId = :categoryId " +
 		   "AND p.status = 'ACTIVE' " +
 		   "AND b.status = 'ACTIVE' " +
 		   "AND (:#{#brandSlugs == null} = true OR b.slug IN :brandSlugs) " +
@@ -84,7 +85,7 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 		   "LEFT JOIN FETCH p.variants v " +
 		   "LEFT JOIN FETCH p.brand b " +
 		   "LEFT JOIN FETCH p.category " +
-		   "WHERE p.categoryId = :categoryId " +
+		   "WHERE p.isDeleted = false AND p.categoryId = :categoryId " +
 		   "AND p.status = 'ACTIVE' " +
 		   "AND b.status = 'ACTIVE' " +
 		   "AND (:#{#brandSlugs == null} = true OR b.slug IN :brandSlugs) " +
@@ -115,6 +116,9 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 														   Pageable pageable);
 
 	@Query("SELECT p FROM Product p LEFT JOIN FETCH p.variants LEFT JOIN FETCH p.brand LEFT JOIN FETCH p.category " +
-		   "WHERE p.status = :status AND p.id != :excludeId")
+		   "WHERE p.isDeleted = false AND p.status = :status AND p.id != :excludeId")
 	List<Product> findByStatusAndIdNot(@Param("status") Product.ProductStatus status, @Param("excludeId") UUID excludeId);
+
+	@Query("SELECT p FROM Product p WHERE p.isDeleted = false AND p.id = :id")
+	Optional<Product> findByIdAndNotDeleted(@Param("id") UUID id);
 }

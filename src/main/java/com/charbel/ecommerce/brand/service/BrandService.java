@@ -31,7 +31,7 @@ public class BrandService {
 	}
 
 	public BrandResponse getBrandById(UUID id) {
-		Brand brand = brandRepository.findById(id)
+		Brand brand = brandRepository.findByIdAndNotDeleted(id)
 				.orElseThrow(() -> new RuntimeException("Brand not found with id: " + id));
 		return BrandResponse.fromEntity(brand);
 	}
@@ -68,7 +68,7 @@ public class BrandService {
 	public BrandResponse updateBrand(UUID id, CreateBrandRequest request) {
 		log.info("Updating brand with id: {}", id);
 
-		Brand brand = brandRepository.findById(id)
+		Brand brand = brandRepository.findByIdAndNotDeleted(id)
 				.orElseThrow(() -> new RuntimeException("Brand not found with id: " + id));
 
 		if (!brand.getName().equals(request.getName()) && brandRepository.existsByName(request.getName())) {
@@ -93,12 +93,13 @@ public class BrandService {
 
 	@Transactional
 	public void deleteBrand(UUID id) {
-		log.info("Deleting brand with id: {}", id);
+		log.info("Soft deleting brand with id: {}", id);
 
-		Brand brand = brandRepository.findById(id)
+		Brand brand = brandRepository.findByIdAndNotDeleted(id)
 				.orElseThrow(() -> new RuntimeException("Brand not found with id: " + id));
 
-		brandRepository.delete(brand);
-		log.info("Brand deleted successfully");
+		brand.softDelete();
+		brandRepository.save(brand);
+		log.info("Brand soft deleted successfully");
 	}
 }

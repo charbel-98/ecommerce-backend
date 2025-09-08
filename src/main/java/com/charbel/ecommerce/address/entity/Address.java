@@ -1,15 +1,14 @@
 package com.charbel.ecommerce.address.entity;
 
+import com.charbel.ecommerce.common.entity.BaseEntity;
 import com.charbel.ecommerce.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -18,7 +17,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Address {
+@EqualsAndHashCode(callSuper = false)
+public class Address extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -46,12 +46,4 @@ public class Address {
     @Column(name = "is_default", nullable = false)
     @Builder.Default
     private Boolean isDefault = false;
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
 }

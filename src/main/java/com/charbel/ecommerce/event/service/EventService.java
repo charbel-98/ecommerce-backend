@@ -135,21 +135,16 @@ public class EventService {
 
 	@Transactional
 	public void deleteEvent(UUID eventId) {
-		Event event = eventRepository.findById(eventId)
+		Event event = eventRepository.findByIdAndNotDeleted(eventId)
 				.orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
 
-		// Delete image from CDN
-		String imageUrl = event.getImageUrl();
-		if (imageUrl != null && !imageUrl.trim().isEmpty()) {
-			cdnService.deleteImageByUrl(imageUrl);
-		}
-
-		// Delete discounts (cascade will handle this, but explicit for clarity)
+		// Soft delete discounts associated with this event
 		discountRepository.deleteByEventId(eventId);
 
-		// Delete event
-		eventRepository.delete(event);
-		log.info("Deleted event: {} with ID: {}", event.getName(), eventId);
+		// Soft delete event
+		event.softDelete();
+		eventRepository.save(event);
+		log.info("Soft deleted event: {} with ID: {}", event.getName(), eventId);
 	}
 
 	public Event getEventById(UUID eventId) {

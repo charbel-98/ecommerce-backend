@@ -1,25 +1,25 @@
 package com.charbel.ecommerce.event.entity;
 
+import com.charbel.ecommerce.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "discounts")
 @Data
+@EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Discount {
+public class Discount extends BaseEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
@@ -44,14 +44,6 @@ public class Discount {
 
 	@Column(name = "max_discount_amount", precision = 10, scale = 2)
 	private BigDecimal maxDiscountAmount; // max discount for percentage type in dollars
-
-	@CreationTimestamp
-	@Column(name = "created_at", nullable = false, updatable = false)
-	private LocalDateTime createdAt;
-
-	@UpdateTimestamp
-	@Column(name = "updated_at", nullable = false)
-	private LocalDateTime updatedAt;
 
 	public enum DiscountType {
 		PERCENTAGE, FIXED_AMOUNT

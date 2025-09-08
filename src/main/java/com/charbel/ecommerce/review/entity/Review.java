@@ -1,5 +1,6 @@
 package com.charbel.ecommerce.review.entity;
 
+import com.charbel.ecommerce.common.entity.BaseEntity;
 import com.charbel.ecommerce.product.entity.Product;
 import com.charbel.ecommerce.user.entity.User;
 import jakarta.persistence.*;
@@ -7,11 +8,9 @@ import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,7 +26,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Review {
+@EqualsAndHashCode(callSuper = false)
+public class Review extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -67,14 +67,6 @@ public class Review {
     @Column(name = "helpful_count", nullable = false)
     @Builder.Default
     private Integer helpfulCount = 0;
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @OrderBy("sortOrder ASC")

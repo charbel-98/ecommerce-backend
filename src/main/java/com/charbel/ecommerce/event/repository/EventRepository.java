@@ -17,34 +17,39 @@ import com.charbel.ecommerce.event.entity.Event;
 @Repository
 public interface EventRepository extends JpaRepository<Event, UUID> {
 
-	List<Event> findByStatusOrderByStartDateDesc(Event.EventStatus status);
+	@Query("SELECT e FROM Event e WHERE e.isDeleted = false AND e.status = :status ORDER BY e.startDate DESC")
+	List<Event> findByStatusOrderByStartDateDesc(@Param("status") Event.EventStatus status);
 
-	List<Event> findByStatusAndStartDateLessThanEqualAndEndDateGreaterThanEqual(Event.EventStatus status,
-			LocalDateTime startDate, LocalDateTime endDate);
+	@Query("SELECT e FROM Event e WHERE e.isDeleted = false AND e.status = :status AND :startDate <= e.endDate AND :endDate >= e.startDate")
+	List<Event> findByStatusAndStartDateLessThanEqualAndEndDateGreaterThanEqual(@Param("status") Event.EventStatus status,
+			@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
-	@Query("SELECT e FROM Event e WHERE e.status = :status AND :now BETWEEN e.startDate AND e.endDate")
+	@Query("SELECT e FROM Event e WHERE e.isDeleted = false AND e.status = :status AND :now BETWEEN e.startDate AND e.endDate")
 	List<Event> findActiveEvents(@Param("status") Event.EventStatus status, @Param("now") LocalDateTime now);
 
-	@Query("SELECT e FROM Event e LEFT JOIN FETCH e.discounts LEFT JOIN FETCH e.products WHERE e.id = :id")
+	@Query("SELECT e FROM Event e LEFT JOIN FETCH e.discounts LEFT JOIN FETCH e.products WHERE e.isDeleted = false AND e.id = :id")
 	Optional<Event> findByIdWithDiscountsAndProducts(@Param("id") UUID id);
 
-	@Query("SELECT e FROM Event e LEFT JOIN FETCH e.discounts WHERE e.id = :id")
+	@Query("SELECT e FROM Event e LEFT JOIN FETCH e.discounts WHERE e.isDeleted = false AND e.id = :id")
 	Optional<Event> findByIdWithDiscounts(@Param("id") UUID id);
 
-	@Query("SELECT DISTINCT e FROM Event e LEFT JOIN FETCH e.discounts LEFT JOIN FETCH e.products")
+	@Query("SELECT DISTINCT e FROM Event e LEFT JOIN FETCH e.discounts LEFT JOIN FETCH e.products WHERE e.isDeleted = false")
 	Page<Event> findAllWithDiscountsAndProducts(Pageable pageable);
 
-	boolean existsByName(String name);
+	@Query("SELECT CASE WHEN COUNT(e) > 0 THEN true ELSE false END FROM Event e WHERE e.isDeleted = false AND e.name = :name")
+	boolean existsByName(@Param("name") String name);
 
 	@Query("SELECT COUNT(e) > 0 FROM Event e " +
-		   "WHERE e.discounts IS NOT EMPTY " +
+		   "WHERE e.isDeleted = false " +
+		   "AND e.discounts IS NOT EMPTY " +
 		   "AND e.status != 'INACTIVE' " +
 		   "AND ((e.startDate <= :endDate AND e.endDate >= :startDate))")
 	boolean existsActiveEventWithDiscountInDateRange(@Param("startDate") LocalDateTime startDate, 
 													@Param("endDate") LocalDateTime endDate);
 
 	@Query("SELECT COUNT(e) > 0 FROM Event e " +
-		   "WHERE e.id != :eventId " +
+		   "WHERE e.isDeleted = false " +
+		   "AND e.id != :eventId " +
 		   "AND e.discounts IS NOT EMPTY " +
 		   "AND e.status != 'INACTIVE' " +
 		   "AND ((e.startDate <= :endDate AND e.endDate >= :startDate))")
@@ -55,9 +60,13 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
 	@Query("SELECT DISTINCT e FROM Event e " +
 		   "JOIN FETCH e.discounts d " +
 		   "JOIN e.products p " +
-		   "WHERE p.id IN :productIds " +
+		   "WHERE e.isDeleted = false " +
+		   "AND p.id IN :productIds " +
 		   "AND e.status = 'ACTIVE' " +
 		   "AND :now BETWEEN e.startDate AND e.endDate")
 	List<Event> findActiveEventsWithDiscountsForProducts(@Param("productIds") List<UUID> productIds, 
 														  @Param("now") LocalDateTime now);
+
+	@Query("SELECT e FROM Event e WHERE e.isDeleted = false AND e.id = :id")
+	Optional<Event> findByIdAndNotDeleted(@Param("id") UUID id);
 }

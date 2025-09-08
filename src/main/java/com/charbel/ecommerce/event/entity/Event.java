@@ -1,10 +1,10 @@
 package com.charbel.ecommerce.event.entity;
 
+import com.charbel.ecommerce.common.entity.BaseEntity;
 import com.charbel.ecommerce.product.entity.Product;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.EqualsAndHashCode;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,8 +18,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EqualsAndHashCode(exclude = {"discounts", "products"})
-public class Event {
+@EqualsAndHashCode(callSuper = false, exclude = {"discounts", "products"})
+public class Event extends BaseEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
@@ -51,14 +51,6 @@ public class Event {
 	@ManyToMany(fetch = FetchType.LAZY)
 	@JoinTable(name = "event_products", joinColumns = @JoinColumn(name = "event_id"), inverseJoinColumns = @JoinColumn(name = "product_id"))
 	private Set<Product> products;
-
-	@CreationTimestamp
-	@Column(name = "created_at", nullable = false, updatable = false)
-	private LocalDateTime createdAt;
-
-	@UpdateTimestamp
-	@Column(name = "updated_at", nullable = false)
-	private LocalDateTime updatedAt;
 
 	public enum EventStatus {
 		ACTIVE, INACTIVE, SCHEDULED, EXPIRED

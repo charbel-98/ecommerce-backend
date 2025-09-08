@@ -135,9 +135,9 @@ public class ReviewService {
 
     @Transactional
     public void deleteReview(UUID reviewId, UUID userId) {
-        log.info("Deleting review {} by user {}", reviewId, userId);
+        log.info("Soft deleting review {} by user {}", reviewId, userId);
 
-        Review review = reviewRepository.findById(reviewId)
+        Review review = reviewRepository.findByIdAndNotDeleted(reviewId)
                 .orElseThrow(() -> new ReviewNotFoundException("Review not found with ID: " + reviewId));
 
         if (!review.getUserId().equals(userId)) {
@@ -146,23 +146,18 @@ public class ReviewService {
 
         UUID productId = review.getProductId();
 
-        // Delete review images from CDN first
-        List<ReviewImage> reviewImages = reviewImageRepository.findByReviewIdOrderBySortOrderAsc(reviewId);
-        for (ReviewImage reviewImage : reviewImages) {
-            try {
-                cdnService.deleteImageByUrl(reviewImage.getImageUrl());
-                log.debug("Deleted review image from CDN: {}", reviewImage.getImageUrl());
-            } catch (Exception e) {
-                log.warn("Failed to delete review image from CDN: {}", reviewImage.getImageUrl(), e);
-            }
-        }
+        // Soft delete review images
+        reviewImageRepository.deleteByReviewId(reviewId);
+        log.debug("Soft deleted review images for review: {}", reviewId);
 
-        // Delete helpful votes for this review
+        // Soft delete helpful votes for this review
         reviewHelpfulVoteRepository.deleteByReviewId(reviewId);
-        log.debug("Deleted helpful votes for review: {}", reviewId);
+        log.debug("Soft deleted helpful votes for review: {}", reviewId);
 
-        reviewRepository.delete(review);
-        log.info("Review deleted successfully: {}", reviewId);
+        // Soft delete review
+        review.softDelete();
+        reviewRepository.save(review);
+        log.info("Review soft deleted successfully: {}", reviewId);
 
         // Update product's average rating and review count
         updateProductRatingStats(productId);
