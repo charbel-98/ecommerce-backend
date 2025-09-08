@@ -11,11 +11,14 @@ import com.charbel.ecommerce.orders.dto.CreateOrderResponse;
 import com.charbel.ecommerce.orders.dto.OrderItemResponse;
 import com.charbel.ecommerce.orders.dto.OrderResponse;
 import com.charbel.ecommerce.orders.dto.UpdateOrderStatusRequest;
+import com.charbel.ecommerce.product.dto.ProductImageResponse;
+import com.charbel.ecommerce.product.entity.ProductImage;
 import com.charbel.ecommerce.orders.entity.Order;
 import com.charbel.ecommerce.orders.entity.OrderItem;
 import com.charbel.ecommerce.orders.repository.OrderRepository;
 import com.charbel.ecommerce.product.entity.Product;
 import com.charbel.ecommerce.product.entity.ProductVariant;
+import com.charbel.ecommerce.product.repository.ProductImageRepository;
 import com.charbel.ecommerce.product.repository.ProductVariantRepository;
 import com.charbel.ecommerce.user.entity.User;
 import com.charbel.ecommerce.service.SecurityService;
@@ -39,6 +42,7 @@ public class OrderService {
 
 	private final OrderRepository orderRepository;
 	private final ProductVariantRepository productVariantRepository;
+	private final ProductImageRepository productImageRepository;
 	private final AddressRepository addressRepository;
 	private final EventRepository eventRepository;
 	private final SecurityService securityService;
@@ -410,20 +414,57 @@ public class OrderService {
 		}
 
 		return OrderResponse.builder().id(order.getId()).orderNumber(orderNumber)
-				.userId(order.getUser().getId()).userEmail(order.getUser().getEmail())
-				.userFirstName(order.getUser().getFirstName()).userLastName(order.getUser().getLastName())
-				.originalAmount(order.getOriginalAmount()).discountAmount(order.getDiscountAmount())
-				.deliveryFee(order.getDeliveryFee()).totalAmount(order.getTotalAmount())
-				.status(order.getStatus()).orderItems(orderItemResponses)
-				.createdAt(order.getCreatedAt()).updatedAt(order.getUpdatedAt()).build();
+				.addressId(order.getAddress().getId()).userId(order.getUser().getId())
+				.userEmail(order.getUser().getEmail()).userFirstName(order.getUser().getFirstName())
+				.userLastName(order.getUser().getLastName()).originalAmount(order.getOriginalAmount())
+				.discountAmount(order.getDiscountAmount()).deliveryFee(order.getDeliveryFee())
+				.totalAmount(order.getTotalAmount()).status(order.getStatus())
+				.orderItems(orderItemResponses).createdAt(order.getCreatedAt())
+				.updatedAt(order.getUpdatedAt()).build();
 	}
 
 	private OrderItemResponse mapToOrderItemResponse(OrderItem orderItem) {
 		BigDecimal totalPrice = orderItem.getUnitPrice().multiply(BigDecimal.valueOf(orderItem.getQuantity()));
+		
+		// Get variant-specific images first, fallback to product images
+		List<ProductImageResponse> images = getVariantImages(orderItem.getVariant());
+		
 		return OrderItemResponse.builder().id(orderItem.getId()).variantId(orderItem.getVariant().getId())
 				.sku(orderItem.getVariant().getSku()).attributes(orderItem.getVariant().getAttributes())
 				.productName(orderItem.getVariant().getProduct().getName()).quantity(orderItem.getQuantity())
 				.unitPrice(orderItem.getUnitPrice()).totalPrice(totalPrice)
+				.images(images)
+				.build();
+	}
+
+	private List<ProductImageResponse> getVariantImages(com.charbel.ecommerce.product.entity.ProductVariant variant) {
+		// First try to get variant-specific images
+		List<ProductImage> variantImages = productImageRepository.findByVariantId(variant.getId());
+		
+		// If no variant-specific images, get product images (where variantId is null)
+		if (variantImages.isEmpty()) {
+			variantImages = productImageRepository.findByProductIdAndVariantIdIsNull(variant.getProduct().getId());
+		}
+		
+		// Sort images: primary first, then by sort order
+		return variantImages.stream()
+				.sorted((a, b) -> {
+					// Primary images first, then by sort order
+					if (a.getIsPrimary() && !b.getIsPrimary()) return -1;
+					if (!a.getIsPrimary() && b.getIsPrimary()) return 1;
+					return a.getSortOrder().compareTo(b.getSortOrder());
+				})
+				.map(this::mapToProductImageResponse)
+				.collect(Collectors.toList());
+	}
+
+	private ProductImageResponse mapToProductImageResponse(ProductImage image) {
+		return ProductImageResponse.builder()
+				.id(image.getId())
+				.imageUrl(image.getImageUrl())
+				.altText(image.getAltText())
+				.isPrimary(image.getIsPrimary())
+				.sortOrder(image.getSortOrder())
 				.build();
 	}
 }
