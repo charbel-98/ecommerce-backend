@@ -42,7 +42,7 @@ public class CategoryService {
 		log.info("Creating new category: {}", request.getName());
 
 		// Validate that parentId exists (now required)
-		Category parentCategory = categoryRepository.findById(request.getParentId())
+		Category parentCategory = categoryRepository.findByIdAndNotDeleted(request.getParentId())
 				.orElseThrow(() -> new IllegalArgumentException(
 						"Parent category with ID '" + request.getParentId() + "' not found"));
 
@@ -98,7 +98,7 @@ public class CategoryService {
 	public CategoryResponse updateCategory(UUID id, UpdateCategoryRequest request) {
 		log.info("Updating category with ID: {}", id);
 
-		Category existing = categoryRepository.findById(id)
+		Category existing = categoryRepository.findByIdAndNotDeleted(id)
 				.orElseThrow(() -> new IllegalArgumentException("Category with ID '" + id + "' not found"));
 
 		// Disallow updates to root (level 0) categories
@@ -129,7 +129,7 @@ public class CategoryService {
 
 		// Update parent and level if provided
 		if (request.getParentId() != null && !request.getParentId().equals(existing.getParentId())) {
-			Category parentCategory = categoryRepository.findById(request.getParentId())
+			Category parentCategory = categoryRepository.findByIdAndNotDeleted(request.getParentId())
 					.orElseThrow(() -> new IllegalArgumentException(
 							"Parent category with ID '" + request.getParentId() + "' not found"));
 
@@ -195,7 +195,7 @@ public class CategoryService {
 
 	@Transactional(readOnly = true)
 	public CategoryResponse getCategoryById(UUID id) {
-		Category category = categoryRepository.findById(id)
+		Category category = categoryRepository.findByIdAndNotDeleted(id)
 				.orElseThrow(() -> new IllegalArgumentException("Category with ID '" + id + "' not found"));
 		return mapToCategoryResponse(category);
 	}
@@ -209,7 +209,7 @@ public class CategoryService {
 	@Transactional(readOnly = true)
 	public void validateLeafCategory(UUID categoryId) {
 		if (!isLeafCategory(categoryId)) {
-			Category category = categoryRepository.findById(categoryId)
+			Category category = categoryRepository.findByIdAndNotDeleted(categoryId)
 					.orElseThrow(() -> new IllegalArgumentException("Category not found"));
 			throw new IllegalArgumentException("Category '" + category.getName()
 					+ "' is not a leaf category. Products must be assigned to leaf categories only.");
@@ -244,7 +244,7 @@ public class CategoryService {
 	@Transactional(readOnly = true)
 	public CategoryResponse getCategorySubtree(UUID categoryId) {
 		log.info("Fetching category subtree for ID: {}", categoryId);
-		Category category = categoryRepository.findById(categoryId)
+		Category category = categoryRepository.findByIdAndNotDeleted(categoryId)
 				.orElseThrow(() -> new IllegalArgumentException("Category with ID '" + categoryId + "' not found"));
 		return mapToCategoryResponseWithChildren(category);
 	}

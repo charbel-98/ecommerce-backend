@@ -327,7 +327,7 @@ public class OrderService {
 	public OrderResponse updateOrderStatus(UUID orderId, UpdateOrderStatusRequest request) {
 		User currentUser = securityService.getCurrentUser();
 		
-		Order order = orderRepository.findById(orderId)
+		Order order = orderRepository.findByIdAndNotDeleted(orderId)
 			.orElseThrow(() -> new EntityNotFoundException("Order not found"));
 		
 		order.setStatus(request.getStatus());
@@ -375,7 +375,7 @@ public class OrderService {
 	}
 
 	private Address validateAddressOwnership(UUID addressId, UUID userId) {
-		Address address = addressRepository.findById(addressId)
+		Address address = addressRepository.findByIdAndNotDeleted(addressId)
 			.orElseThrow(() -> new EntityNotFoundException("Address not found"));
 		
 		if (!address.getUser().getId().equals(userId)) {

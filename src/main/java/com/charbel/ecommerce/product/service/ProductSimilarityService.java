@@ -31,7 +31,7 @@ public class ProductSimilarityService {
     public List<SimilarProductResponse> findSimilarProducts(UUID productId, int limit) {
         log.info("Finding similar products for product ID: {} with limit: {}", productId, limit);
         
-        Product targetProduct = productRepository.findById(productId)
+        Product targetProduct = productRepository.findByIdAndNotDeleted(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found with ID: " + productId));
 
         if (targetProduct.getStatus() != Product.ProductStatus.ACTIVE) {

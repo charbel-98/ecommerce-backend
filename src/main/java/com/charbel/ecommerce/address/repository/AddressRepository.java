@@ -39,4 +39,7 @@ public interface AddressRepository extends JpaRepository<Address, UUID> {
 
     @Query("SELECT a FROM Address a WHERE a.isDeleted = false AND a.id = :addressId AND a.user.id = :userId")
     Optional<Address> findByIdAndUserIdAndNotDeleted(@Param("addressId") UUID addressId, @Param("userId") UUID userId);
+
+    @Query("SELECT a FROM Address a WHERE a.isDeleted = false ORDER BY a.createdAt DESC")
+    List<Address> findAllAndNotDeleted();
 }

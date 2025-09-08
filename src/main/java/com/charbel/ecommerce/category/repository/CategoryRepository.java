@@ -47,4 +47,7 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
 
 	@Query("SELECT c FROM Category c WHERE c.isDeleted = false AND c.id = :id")
 	Optional<Category> findByIdAndNotDeleted(@Param("id") UUID id);
+
+	@Query("SELECT c FROM Category c WHERE c.isDeleted = false ORDER BY c.sortOrder ASC, c.name ASC")
+	List<Category> findAllAndNotDeleted();
 }

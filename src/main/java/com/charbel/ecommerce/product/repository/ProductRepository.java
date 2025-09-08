@@ -121,4 +121,7 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
 	@Query("SELECT p FROM Product p WHERE p.isDeleted = false AND p.id = :id")
 	Optional<Product> findByIdAndNotDeleted(@Param("id") UUID id);
+
+	@Query("SELECT p FROM Product p WHERE p.isDeleted = false ORDER BY p.createdAt DESC")
+	List<Product> findAllAndNotDeleted();
 }

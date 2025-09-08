@@ -29,4 +29,7 @@ public interface BrandRepository extends JpaRepository<Brand, UUID> {
 
 	@Query("SELECT b FROM Brand b WHERE b.isDeleted = false AND b.id = :id")
 	Optional<Brand> findByIdAndNotDeleted(UUID id);
+
+	@Query("SELECT b FROM Brand b WHERE b.isDeleted = false ORDER BY b.name ASC")
+	List<Brand> findAllAndNotDeleted();
 }

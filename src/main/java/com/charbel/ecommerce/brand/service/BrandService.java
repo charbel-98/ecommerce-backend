@@ -26,7 +26,7 @@ public class BrandService {
 	private final CdnService cdnService;
 
 	public List<BrandResponse> getAllBrands() {
-		return brandRepository.findAll().stream().map(BrandResponse::fromEntity).collect(Collectors.toList());
+		return brandRepository.findAllAndNotDeleted().stream().map(BrandResponse::fromEntity).collect(Collectors.toList());
 	}
 
 	public List<BrandResponse> getActiveBrands() {

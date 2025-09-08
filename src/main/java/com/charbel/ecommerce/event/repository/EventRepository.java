@@ -69,4 +69,7 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
 
 	@Query("SELECT e FROM Event e WHERE e.isDeleted = false AND e.id = :id")
 	Optional<Event> findByIdAndNotDeleted(@Param("id") UUID id);
+
+	@Query("SELECT e FROM Event e WHERE e.isDeleted = false ORDER BY e.createdAt DESC")
+	List<Event> findAllAndNotDeleted();
 }

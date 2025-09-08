@@ -43,7 +43,7 @@ public class AddressService {
     public AddressResponse createAddress(CreateAddressRequest request, UUID userId) {
         log.info("Creating new address for user: {}", userId);
 
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdAndNotDeleted(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         // If this is set as default, clear existing default

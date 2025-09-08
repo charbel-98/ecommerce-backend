@@ -304,7 +304,7 @@ public class ProductService {
 	public ProductResponse disableProduct(UUID productId) {
 		log.info("Disabling product with ID: {}", productId);
 
-		Product product = productRepository.findById(productId)
+		Product product = productRepository.findByIdAndNotDeleted(productId)
 				.orElseThrow(() -> new EntityNotFoundException("Product not found with ID: " + productId));
 
 		product.setStatus(Product.ProductStatus.INACTIVE);

@@ -28,4 +28,7 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
 
 	@Query("SELECT pv FROM ProductVariant pv WHERE pv.isDeleted = false AND pv.id = :id")
 	Optional<ProductVariant> findByIdAndNotDeleted(@Param("id") UUID id);
+
+	@Query("SELECT pv FROM ProductVariant pv WHERE pv.isDeleted = false ORDER BY pv.createdAt DESC")
+	List<ProductVariant> findAllAndNotDeleted();
 }

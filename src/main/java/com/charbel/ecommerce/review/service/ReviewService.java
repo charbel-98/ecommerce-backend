@@ -67,10 +67,10 @@ public class ReviewService {
         log.info("Creating review for product {} by user {} with {} images",
                 productId, userId, images != null ? images.length : 0);
 
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findByIdAndNotDeleted(productId)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found with ID: " + productId));
 
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdAndNotDeleted(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
 
         if (reviewRepository.existsByProductIdAndUserId(productId, userId)) {
@@ -101,7 +101,7 @@ public class ReviewService {
         updateProductRatingStats(productId);
 
         // Fetch the review with images loaded
-        Review reviewWithImages = reviewRepository.findById(savedReview.getId())
+        Review reviewWithImages = reviewRepository.findByIdAndNotDeleted(savedReview.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Review not found after creation"));
 
         log.info("Review created successfully with ID: {}", savedReview.getId());
@@ -113,7 +113,7 @@ public class ReviewService {
     public ReviewResponse updateReview(UUID reviewId, UUID userId, UpdateReviewRequest request) {
         log.info("Updating review {} by user {}", reviewId, userId);
 
-        Review review = reviewRepository.findById(reviewId)
+        Review review = reviewRepository.findByIdAndNotDeleted(reviewId)
                 .orElseThrow(() -> new ReviewNotFoundException("Review not found with ID: " + reviewId));
 
         if (!review.getUserId().equals(userId)) {
@@ -302,10 +302,10 @@ public class ReviewService {
     public ReviewResponse markReviewHelpful(UUID reviewId, UUID userId) {
         log.info("Marking review as helpful: {} by user: {}", reviewId, userId);
 
-        Review review = reviewRepository.findById(reviewId)
+        Review review = reviewRepository.findByIdAndNotDeleted(reviewId)
                 .orElseThrow(() -> new ReviewNotFoundException("Review not found with ID: " + reviewId));
 
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdAndNotDeleted(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
 
         // Check if user is trying to mark their own review as helpful
@@ -340,7 +340,7 @@ public class ReviewService {
     private void updateProductRatingStats(UUID productId) {
         log.debug("Updating rating stats for product: {}", productId);
 
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findByIdAndNotDeleted(productId)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found with ID: " + productId));
 
         Long reviewCount = reviewRepository.countByProductId(productId);

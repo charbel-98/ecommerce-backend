@@ -176,7 +176,7 @@ public class EventService {
 
 	@Transactional
 	public Event addProductsToEvent(UUID eventId, Set<UUID> productIds) {
-		Event event = eventRepository.findById(eventId)
+		Event event = eventRepository.findByIdAndNotDeleted(eventId)
 				.orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
 
 		List<Product> products = productRepository.findAllById(productIds);
@@ -192,7 +192,7 @@ public class EventService {
 
 	@Transactional
 	public Event removeProductsFromEvent(UUID eventId, Set<UUID> productIds) {
-		Event event = eventRepository.findById(eventId)
+		Event event = eventRepository.findByIdAndNotDeleted(eventId)
 				.orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
 
 		List<Product> products = productRepository.findAllById(productIds);

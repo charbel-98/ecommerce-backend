@@ -124,7 +124,7 @@ public class DataSeeder implements CommandLineRunner {
         reviewRepository.deleteAll();
         
         // Clear order related data
-        orderRepository.findAll().forEach(order -> {
+        orderRepository.findAllOrdersWithDetails().forEach(order -> {
             order.getOrderItems().clear();
             orderRepository.delete(order);
         });
@@ -134,7 +134,7 @@ public class DataSeeder implements CommandLineRunner {
         productRepository.deleteAll();
         
         discountRepository.deleteAll();
-        eventRepository.findAll().forEach(event -> {
+        eventRepository.findAllAndNotDeleted().forEach(event -> {
             event.getProducts().clear();
             eventRepository.delete(event);
         });
@@ -621,7 +621,7 @@ public class DataSeeder implements CommandLineRunner {
     private void seedAddressesForUsers() {
         log.info("Seeding addresses for users...");
         
-        List<User> users = userRepository.findAll();
+        List<User> users = userRepository.findAllAndNotDeleted();
         List<Address> addresses = new ArrayList<>();
         
         String[][] addressData = {
@@ -666,8 +666,8 @@ public class DataSeeder implements CommandLineRunner {
         log.info("Seeding products with images...");
         
         // Get all necessary data
-        List<Brand> brands = brandRepository.findAll();
-        List<Category> categories = categoryRepository.findAll();
+        List<Brand> brands = brandRepository.findAllAndNotDeleted();
+        List<Category> categories = categoryRepository.findAllAndNotDeleted();
         
         Map<String, Brand> brandMap = brands.stream()
             .collect(Collectors.toMap(Brand::getSlug, brand -> brand));
@@ -1300,8 +1300,8 @@ public class DataSeeder implements CommandLineRunner {
     private void seedReviews() {
         log.info("Seeding reviews...");
         
-        List<Product> products = productRepository.findAll();
-        List<User> customers = userRepository.findAll().stream()
+        List<Product> products = productRepository.findAllAndNotDeleted();
+        List<User> customers = userRepository.findAllAndNotDeleted().stream()
             .filter(user -> user.getRole() == User.UserRole.CUSTOMER)
             .collect(Collectors.toList());
         
@@ -1380,7 +1380,7 @@ public class DataSeeder implements CommandLineRunner {
     private void updateAllProductRatingStats() {
         log.info("Updating product rating statistics...");
         
-        List<Product> products = productRepository.findAll();
+        List<Product> products = productRepository.findAllAndNotDeleted();
         
         for (Product product : products) {
             Long reviewCount = reviewRepository.countByProductId(product.getId());
@@ -1401,11 +1401,11 @@ public class DataSeeder implements CommandLineRunner {
     private void seedOrders() {
         log.info("Seeding orders...");
         
-        List<User> customers = userRepository.findAll().stream()
+        List<User> customers = userRepository.findAllAndNotDeleted().stream()
             .filter(user -> user.getRole() == User.UserRole.CUSTOMER)
             .collect(Collectors.toList());
-        List<ProductVariant> variants = productVariantRepository.findAll();
-        List<Address> addresses = addressRepository.findAll();
+        List<ProductVariant> variants = productVariantRepository.findAllAndNotDeleted();
+        List<Address> addresses = addressRepository.findAllAndNotDeleted();
         
         if (customers.isEmpty() || variants.isEmpty() || addresses.isEmpty()) {
             log.warn("Missing data for order seeding");
@@ -1585,8 +1585,8 @@ public class DataSeeder implements CommandLineRunner {
     private void seedEventProductLinks() {
         log.info("Linking products to events...");
         
-        List<Event> events = eventRepository.findAll();
-        List<Product> products = productRepository.findAll();
+        List<Event> events = eventRepository.findAllAndNotDeleted();
+        List<Product> products = productRepository.findAllAndNotDeleted();
         
         if (events.isEmpty() || products.isEmpty()) {
             log.warn("No events or products found for linking");
