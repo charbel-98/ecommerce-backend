@@ -1,31 +1,41 @@
 package com.charbel.ecommerce.orders.controller;
 
-import com.charbel.ecommerce.orders.dto.BillResponse;
-import com.charbel.ecommerce.orders.dto.CreateOrderRequest;
-import com.charbel.ecommerce.orders.dto.CreateOrderResponse;
-import com.charbel.ecommerce.orders.dto.OrderResponse;
-import com.charbel.ecommerce.orders.dto.PaginatedOrdersResponse;
-import com.charbel.ecommerce.orders.dto.UpdateOrderStatusRequest;
-import com.charbel.ecommerce.orders.entity.Order.OrderStatus;
-import com.charbel.ecommerce.orders.service.OrderService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import com.charbel.ecommerce.orders.dto.AdminOrderResponseDTO;
+import com.charbel.ecommerce.orders.dto.BillResponse;
+import com.charbel.ecommerce.orders.dto.CreateOrderRequest;
+import com.charbel.ecommerce.orders.dto.CreateOrderResponse;
+import com.charbel.ecommerce.orders.dto.PaginatedAdminOrdersResponse;
+import com.charbel.ecommerce.orders.dto.PaginatedOrdersResponse;
+import com.charbel.ecommerce.orders.dto.UpdateOrderStatusRequest;
+import com.charbel.ecommerce.orders.entity.Order.OrderStatus;
+import com.charbel.ecommerce.orders.service.OrderService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api")
@@ -55,11 +65,11 @@ public class OrderController {
 			@RequestParam(defaultValue = "createdAt") String sort,
 			@RequestParam(defaultValue = "desc") String direction) {
 		log.info("Received status parameters: {}", statusArray != null ? Arrays.toString(statusArray) : "null");
-		
+
 		// Create pagination object
 		Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
 		Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
-		
+
 		if (statusArray != null && statusArray.length > 0) {
 			List<OrderStatus> statuses = new ArrayList<>();
 			for (String statusStr : statusArray) {
@@ -80,14 +90,14 @@ public class OrderController {
 					}
 				}
 			}
-			
+
 			if (!statuses.isEmpty()) {
 				log.info("Fetching orders for current user with statuses: {}", statuses);
 				PaginatedOrdersResponse response = orderService.getUserOrdersByStatusesPaginated(statuses, pageable);
 				return ResponseEntity.ok(response);
 			}
 		}
-		
+
 		log.info("Fetching all orders for current user");
 		PaginatedOrdersResponse response = orderService.getUserOrdersPaginated(pageable);
 		return ResponseEntity.ok(response);
@@ -104,30 +114,60 @@ public class OrderController {
 
 	@GetMapping("/admin/orders")
 	@PreAuthorize("hasRole('ADMIN')")
-	@Operation(summary = "Get all orders", description = "Returns paginated orders with details. Admin only.", security = @SecurityRequirement(name = "bearerAuth"))
-	public ResponseEntity<PaginatedOrdersResponse> getAllOrders(
+	@Operation(summary = "Get all orders", description = "Returns paginated orders with full user and address details, optionally filtered by status(es). Multiple statuses can be provided: ?status=PENDING,SHIPPED or ?status=PENDING&status=SHIPPED. Admin only.", security = @SecurityRequirement(name = "bearerAuth"))
+	public ResponseEntity<PaginatedAdminOrdersResponse> getAllOrders(
+			@RequestParam(required = false, name = "status") String[] statusArray,
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "10") int size,
 			@RequestParam(defaultValue = "createdAt") String sort,
 			@RequestParam(defaultValue = "desc") String direction) {
-		log.info("Admin requesting all orders with pagination");
-		
+		log.info("Admin received status parameters: {}", statusArray != null ? Arrays.toString(statusArray) : "null");
+
 		// Create pagination object
 		Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
 		Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
-		
-		PaginatedOrdersResponse response = orderService.getAllOrdersPaginated(pageable);
+
+		if (statusArray != null && statusArray.length > 0) {
+			List<OrderStatus> statuses = new ArrayList<>();
+			for (String statusStr : statusArray) {
+				// Handle comma-separated values in a single parameter
+				if (statusStr.contains(",")) {
+					for (String individualStatus : statusStr.split(",")) {
+						try {
+							statuses.add(OrderStatus.valueOf(individualStatus.trim()));
+						} catch (IllegalArgumentException e) {
+							log.warn("Invalid order status: {}", individualStatus.trim());
+						}
+					}
+				} else {
+					try {
+						statuses.add(OrderStatus.valueOf(statusStr.trim()));
+					} catch (IllegalArgumentException e) {
+						log.warn("Invalid order status: {}", statusStr.trim());
+					}
+				}
+			}
+
+			if (!statuses.isEmpty()) {
+				log.info("Admin fetching orders with statuses: {}", statuses);
+				PaginatedAdminOrdersResponse response = orderService.getAllOrdersForAdminByStatusesPaginated(statuses, pageable);
+				return ResponseEntity.ok(response);
+			}
+		}
+
+		log.info("Admin requesting all orders with full details and pagination");
+		PaginatedAdminOrdersResponse response = orderService.getAllOrdersForAdminPaginated(pageable);
 		return ResponseEntity.ok(response);
 	}
 
 	@PutMapping("/admin/orders/{orderId}/status")
 	@PreAuthorize("hasRole('ADMIN')")
-	@Operation(summary = "Update order status", description = "Updates the status of an order. Admin only.", security = @SecurityRequirement(name = "bearerAuth"))
-	public ResponseEntity<OrderResponse> updateOrderStatus(
-			@PathVariable UUID orderId, 
+	@Operation(summary = "Update order status", description = "Updates the status of an order and returns full order details with user and address info. Admin only.", security = @SecurityRequirement(name = "bearerAuth"))
+	public ResponseEntity<AdminOrderResponseDTO> updateOrderStatus(
+			@PathVariable UUID orderId,
 			@Valid @RequestBody UpdateOrderStatusRequest request) {
 		log.info("Admin updating order {} status to {}", orderId, request.getStatus());
-		OrderResponse response = orderService.updateOrderStatus(orderId, request);
+		AdminOrderResponseDTO response = orderService.updateOrderStatusForAdmin(orderId, request);
 		return ResponseEntity.ok(response);
 	}
 }

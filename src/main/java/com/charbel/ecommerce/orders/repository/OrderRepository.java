@@ -61,6 +61,15 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 	@Query("SELECT o FROM Order o WHERE o.isDeleted = false AND o.id = :id")
 	Optional<Order> findByIdAndNotDeleted(@Param("id") UUID id);
 
+	@Query("SELECT DISTINCT o FROM Order o " +
+		   "JOIN FETCH o.user " +
+		   "JOIN FETCH o.address " +
+		   "JOIN FETCH o.orderItems oi " +
+		   "JOIN FETCH oi.variant v " +
+		   "JOIN FETCH v.product p " +
+		   "WHERE o.isDeleted = false AND o.id = :id")
+	Optional<Order> findByIdWithDetails(@Param("id") UUID id);
+
 	// Paginated queries
 	@Query("SELECT DISTINCT o FROM Order o " +
 		   "JOIN FETCH o.user " +
@@ -97,4 +106,13 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 		   "JOIN FETCH v.product p " +
 		   "WHERE o.isDeleted = false AND o.user.id = :userId AND o.status IN :statuses ORDER BY o.createdAt DESC")
 	Page<Order> findByUserIdAndStatusInWithDetailsPaginated(@Param("userId") UUID userId, @Param("statuses") List<OrderStatus> statuses, Pageable pageable);
+
+	@Query("SELECT DISTINCT o FROM Order o " +
+		   "JOIN FETCH o.user " +
+		   "JOIN FETCH o.address " +
+		   "JOIN FETCH o.orderItems oi " +
+		   "JOIN FETCH oi.variant v " +
+		   "JOIN FETCH v.product p " +
+		   "WHERE o.isDeleted = false AND o.status IN :statuses ORDER BY o.createdAt DESC")
+	Page<Order> findAllOrdersWithDetailsByStatusesPaginated(@Param("statuses") List<OrderStatus> statuses, Pageable pageable);
 }

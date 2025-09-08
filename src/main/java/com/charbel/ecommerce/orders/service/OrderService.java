@@ -5,11 +5,13 @@ import com.charbel.ecommerce.address.repository.AddressRepository;
 import com.charbel.ecommerce.event.entity.Discount;
 import com.charbel.ecommerce.event.entity.Event;
 import com.charbel.ecommerce.event.repository.EventRepository;
+import com.charbel.ecommerce.orders.dto.AdminOrderResponseDTO;
 import com.charbel.ecommerce.orders.dto.BillResponse;
 import com.charbel.ecommerce.orders.dto.CreateOrderRequest;
 import com.charbel.ecommerce.orders.dto.CreateOrderResponse;
 import com.charbel.ecommerce.orders.dto.OrderItemResponse;
 import com.charbel.ecommerce.orders.dto.OrderResponse;
+import com.charbel.ecommerce.orders.dto.PaginatedAdminOrdersResponse;
 import com.charbel.ecommerce.orders.dto.PaginatedOrdersResponse;
 import com.charbel.ecommerce.orders.dto.UpdateOrderStatusRequest;
 import com.charbel.ecommerce.product.dto.ProductImageResponse;
@@ -202,6 +204,18 @@ public class OrderService {
 		return mapToPaginatedOrdersResponse(orderPage);
 	}
 
+	public PaginatedAdminOrdersResponse getAllOrdersForAdminPaginated(Pageable pageable) {
+		log.info("Fetching all orders for admin with full details and pagination");
+		Page<Order> orderPage = orderRepository.findAllOrdersWithDetailsPaginated(pageable);
+		return mapToPaginatedAdminOrdersResponse(orderPage);
+	}
+
+	public PaginatedAdminOrdersResponse getAllOrdersForAdminByStatusesPaginated(List<Order.OrderStatus> statuses, Pageable pageable) {
+		log.info("Fetching all orders for admin with full details, filtered by statuses: {} and pagination", statuses);
+		Page<Order> orderPage = orderRepository.findAllOrdersWithDetailsByStatusesPaginated(statuses, pageable);
+		return mapToPaginatedAdminOrdersResponse(orderPage);
+	}
+
 	public PaginatedOrdersResponse getUserOrdersPaginated(Pageable pageable) {
 		User currentUser = securityService.getCurrentUser();
 		Page<Order> orderPage = orderRepository.findByUserIdWithDetailsPaginated(currentUser.getId(), pageable);
@@ -323,6 +337,22 @@ public class OrderService {
 			orderId, request.getStatus(), currentUser.getId());
 		
 		return mapToOrderResponse(savedOrder);
+	}
+
+	@Transactional
+	public AdminOrderResponseDTO updateOrderStatusForAdmin(UUID orderId, UpdateOrderStatusRequest request) {
+		User currentUser = securityService.getCurrentUser();
+		
+		Order order = orderRepository.findByIdWithDetails(orderId)
+			.orElseThrow(() -> new EntityNotFoundException("Order not found"));
+		
+		order.setStatus(request.getStatus());
+		Order savedOrder = orderRepository.save(order);
+		
+		log.info("Updated order {} status to {} by admin user {}", 
+			orderId, request.getStatus(), currentUser.getId());
+		
+		return mapToAdminOrderResponse(savedOrder);
 	}
 
 	private BigDecimal calculateBillDiscounts(List<ProductVariant> variants, 
@@ -502,6 +532,75 @@ public class OrderService {
 				.altText(image.getAltText())
 				.isPrimary(image.getIsPrimary())
 				.sortOrder(image.getSortOrder())
+				.build();
+	}
+
+	private AdminOrderResponseDTO mapToAdminOrderResponse(Order order) {
+		List<OrderItemResponse> orderItemResponses = order.getOrderItems().stream()
+				.map(this::mapToOrderItemResponse)
+				.collect(Collectors.toList());
+
+		// Generate order number if it doesn't exist
+		String orderNumber = order.getOrderNumber();
+		if (orderNumber == null) {
+			orderNumber = generateOrderNumber();
+			order.setOrderNumber(orderNumber);
+			orderRepository.save(order);
+		}
+
+		// Map user information
+		AdminOrderResponseDTO.UserInfo userInfo = AdminOrderResponseDTO.UserInfo.builder()
+				.id(order.getUser().getId())
+				.email(order.getUser().getEmail())
+				.firstName(order.getUser().getFirstName())
+				.lastName(order.getUser().getLastName())
+				.role(order.getUser().getRole())
+				.createdAt(order.getUser().getCreatedAt())
+				.updatedAt(order.getUser().getUpdatedAt())
+				.build();
+
+		// Map address information
+		AdminOrderResponseDTO.AddressInfo addressInfo = AdminOrderResponseDTO.AddressInfo.builder()
+				.id(order.getAddress().getId())
+				.street(order.getAddress().getStreet())
+				.city(order.getAddress().getCity())
+				.state(order.getAddress().getState())
+				.zipCode(order.getAddress().getZipCode())
+				.country(order.getAddress().getCountry())
+				.isDefault(order.getAddress().getIsDefault())
+				.createdAt(order.getAddress().getCreatedAt())
+				.updatedAt(order.getAddress().getUpdatedAt())
+				.build();
+
+		return AdminOrderResponseDTO.builder()
+				.id(order.getId())
+				.orderNumber(orderNumber)
+				.originalAmount(order.getOriginalAmount())
+				.discountAmount(order.getDiscountAmount())
+				.deliveryFee(order.getDeliveryFee())
+				.totalAmount(order.getTotalAmount())
+				.status(order.getStatus())
+				.orderItems(orderItemResponses)
+				.createdAt(order.getCreatedAt())
+				.updatedAt(order.getUpdatedAt())
+				.user(userInfo)
+				.address(addressInfo)
+				.build();
+	}
+
+	private PaginatedAdminOrdersResponse mapToPaginatedAdminOrdersResponse(Page<Order> orderPage) {
+		List<AdminOrderResponseDTO> adminOrderResponses = orderPage.getContent().stream()
+				.map(this::mapToAdminOrderResponse)
+				.collect(Collectors.toList());
+
+		return PaginatedAdminOrdersResponse.builder()
+				.orders(adminOrderResponses)
+				.currentPage(orderPage.getNumber())
+				.totalPages(orderPage.getTotalPages())
+				.totalElements(orderPage.getTotalElements())
+				.pageSize(orderPage.getSize())
+				.hasNext(orderPage.hasNext())
+				.hasPrevious(orderPage.hasPrevious())
 				.build();
 	}
 }
