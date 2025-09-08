@@ -1,0 +1,73 @@
+# Ignore build outputs and temporary files
+target/
+*.jar
+*.war
+*.nar
+*.class
+
+# Ignore Maven wrapper files (optional, comment out if you want to include them)
+.mvn/
+mvnw
+mvnw.cmd
+
+# Ignore IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore version control
+.git/
+.gitignore
+
+# Ignore environment files (security)
+.env
+.env.*
+!.env.docker.example
+
+# Ignore log files
+*.log
+logs/
+
+# Ignore test outputs
+test-results/
+coverage/
+
+# Ignore temporary files
+tmp/
+temp/
+*.tmp
+
+# Ignore Docker files (to avoid recursion)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Ignore documentation and non-essential files
+README.md
+docs/
+*.md
+!CLAUDE.md
+
+# Ignore configuration that shouldn't be in containers
+config/local/
+application-local.yml
+application-local.properties
+
+# Ignore database files
+*.db
+*.sqlite
+
+# Ignore backup files
+*.bak
+*.backup
+
+# Ignore node modules if any frontend assets
+node_modules/
+package-lock.json
+yarn.lock

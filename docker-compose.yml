@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: ecommerce_postgres
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-ecommerce_db}
+      POSTGRES_USER: ${DATABASE_USERNAME:-ecommerce_user}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-ecommerce_password}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+    ports:
+      - "${DATABASE_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-ecommerce_user} -d ${DATABASE_NAME:-ecommerce_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - ecommerce-network
+
+  # Spring Boot Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecommerce_backend
+    environment:
+      # Database Configuration
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${DATABASE_NAME:-ecommerce_db}
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-ecommerce_user}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-ecommerce_password}
+      
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET:-ThisIsAVeryLongAndSecureJWTSecretKeyForHMACSHA256Algorithm}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800000}
+      
+      # Cloudflare R2 CDN Configuration
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-}
+      R2_CDN_DOMAIN: ${R2_CDN_DOMAIN:-}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      
+      # Google Gemini AI Configuration
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_API_URL: ${GEMINI_API_URL:-https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent}
+      GEMINI_MAX_RETRIES: ${GEMINI_MAX_RETRIES:-3}
+      GEMINI_TIMEOUT: ${GEMINI_TIMEOUT:-60000}
+      
+      # Logging Configuration
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      SECURITY_LOG_LEVEL: ${SECURITY_LOG_LEVEL:-INFO}
+      
+      # Data Seeding
+      SEED_DATA: ${SEED_DATA:-true}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - ecommerce-network
+
+  # PGAdmin (Optional - for database management)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ecommerce_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@ecommerce.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    depends_on:
+      - postgres
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    profiles:
+      - dev
+    restart: unless-stopped
+    networks:
+      - ecommerce-network
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  ecommerce-network:
+    driver: bridge
