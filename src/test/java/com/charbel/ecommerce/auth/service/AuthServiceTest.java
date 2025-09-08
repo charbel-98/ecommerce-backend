@@ -75,7 +75,7 @@ class AuthServiceTest {
 		loginRequest = LoginRequest.builder().email("test@example.com").password("password123").build();
 
 		refreshToken = RefreshToken.builder().id(UUID.randomUUID()).token("refreshToken").user(testUser)
-				.expiresAt(LocalDateTime.now().plusDays(7)).createdAt(LocalDateTime.now()).build();
+				.expiresAt(LocalDateTime.now().plusDays(7)).build();
 	}
 
 	@Test
@@ -213,7 +213,7 @@ class AuthServiceTest {
 		RefreshTokenRequest request = RefreshTokenRequest.builder().refreshToken("expiredRefreshToken").build();
 		RefreshToken expiredToken = RefreshToken.builder().id(UUID.randomUUID()).token("expiredRefreshToken")
 				.user(testUser).expiresAt(LocalDateTime.now().minusDays(1)) // Expired
-				.createdAt(LocalDateTime.now().minusDays(1)).build();
+				.build();
 
 		when(refreshTokenRepository.findByTokenAndRevokedAtIsNull("expiredRefreshToken"))
 				.thenReturn(Optional.of(expiredToken));
