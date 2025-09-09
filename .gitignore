@@ -34,7 +34,7 @@ build/
 ### VS Code ###
 .vscode/
 
-create### Environment variables and sensitive data ###
+### Environment variables and sensitive data ###
 .env
 .env.local
 .env.production
