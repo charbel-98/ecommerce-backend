@@ -15,13 +15,24 @@ A Spring Boot-based e-commerce backend application with PostgreSQL database, JWT
    cd ecommerce-backend
    ```
 
-2. **Start all services with Docker Compose**
+2. **Create and configure the `.env` file** (see Environment Variables section below)
+
+3. **Start all services with Docker Compose**
    ```bash
    # Start all services (PostgreSQL + Spring Boot app)
    docker-compose up -d
    
    # Or start with logs visible
    docker-compose up
+   ```
+
+4. **Create the database (if not automatically created)**
+   ```bash
+   # Connect to PostgreSQL container and create database
+   docker exec -it ecommerce_postgres psql -U ecommerce_user -c "CREATE DATABASE ecommerce_db;"
+   
+   # Or connect interactively to manage the database
+   docker exec -it ecommerce_postgres psql -U ecommerce_user -d ecommerce_db
    ```
 
 3. **Check service status**
@@ -64,6 +75,34 @@ PgAdmin will be available at: http://localhost:5050
 - Email: admin@ecommerce.local
 - Password: admin123
 
+## Important Configuration Notes
+
+### Spring Profiles
+The application uses different Spring profiles for different environments:
+- **`docker`**: For running with Docker Compose (uses `postgres:5432` hostname)
+- **`dev`**: For local development (uses `localhost:5432` hostname)  
+- **`prod`**: For production deployment
+
+**⚠️ Critical**: When running with Docker, ensure `SPRING_PROFILES_ACTIVE=docker` in your `.env` file. Using `dev` profile with Docker will cause connection failures.
+
+### Database Setup
+The PostgreSQL container automatically creates the database and user based on environment variables. However, if you encounter issues:
+
+1. **Verify the database exists:**
+   ```bash
+   docker exec -it ecommerce_postgres psql -U ecommerce_user -l
+   ```
+
+2. **Create database manually if needed:**
+   ```bash
+   docker exec -it ecommerce_postgres psql -U ecommerce_user -c "CREATE DATABASE ecommerce_db;"
+   ```
+
+3. **Test database connection:**
+   ```bash
+   docker exec -it ecommerce_postgres psql -U ecommerce_user -d ecommerce_db -c "SELECT 'Database connection successful!' as status;"
+   ```
+
 ## Environment Variables
 
 The application requires the following environment variables. Create a `.env` file in the project root:
@@ -76,12 +115,12 @@ DATABASE_PASSWORD=ecommerce_password
 DATABASE_PORT=5432
 
 # JWT CONFIG
-JWT_SECRET=ThisIsAVeryLongAndSecureJWTSecretKeyForHMACSHA256Algorithm
+JWT_SECRET=ck
 JWT_EXPIRATION=86400000
 JWT_REFRESH_EXPIRATION=604800000
 
 # SPRING CONFIG
-SPRING_PROFILES_ACTIVE=dev
+SPRING_PROFILES_ACTIVE=docker
 
 # APP CONFIG
 APP_PORT=8080
@@ -172,17 +211,36 @@ docker-compose restart <service-name>
 docker-compose up --build -d
 ```
 
-### Database Issues
+### Database Connection Issues
 ```bash
 # Check PostgreSQL container logs
 docker-compose logs postgres
 
-# Access PostgreSQL directly
+# Verify database exists and connection works
+docker exec -it ecommerce_postgres psql -U ecommerce_user -d ecommerce_db -c "SELECT version();"
+
+# Check if app can resolve postgres hostname
+docker exec -it ecommerce_backend ping postgres
+
+# Access PostgreSQL directly for debugging
 docker-compose exec postgres psql -U ecommerce_user -d ecommerce_db
 
 # Reset database (WARNING: Deletes all data)
 docker-compose down -v
 docker-compose up -d
+```
+
+### Spring Profile Issues
+If you see connection errors like "Connection to localhost:5432 refused":
+```bash
+# Check the current Spring profile in container
+docker exec ecommerce_backend env | grep SPRING_PROFILES_ACTIVE
+
+# Ensure .env file has correct profile
+echo "SPRING_PROFILES_ACTIVE=docker" >> .env
+
+# Restart the application container
+docker-compose restart app
 ```
 
 ### Application Issues

@@ -20,6 +20,11 @@ FROM eclipse-temurin:17-jre
 LABEL maintainer="ecommerce-backend"
 LABEL description="Spring Boot E-commerce Backend API"
 
+# Install PostgreSQL client tools and curl for health checks
+RUN apt-get update && \
+    apt-get install -y postgresql-client curl && \
+    rm -rf /var/lib/apt/lists/*
+
 # Create non-root user for security
 RUN groupadd --gid 1001 appgroup && \
     useradd --uid 1001 --gid appgroup --shell /bin/bash --create-home appuser
